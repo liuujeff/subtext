@@ -424,8 +424,7 @@ export function Game({ children }: { children: ReactNode }) {
             aria-label="Your guess"
             maxLength={MAX_WORD_LENGTH}
           />
-          {/* Firing keeps focus in the field, so the keyboard stays up between guesses. */}
-          <button type="submit" disabled={pending} onPointerDown={(e) => e.preventDefault()}>
+          <button type="submit" disabled={pending}>
             Fire
           </button>
         </form>
@@ -457,7 +456,6 @@ export function Game({ children }: { children: ReactNode }) {
             <button
               type="button"
               className="suggest"
-              onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
                 setInput(message.suggestion!);
                 void guessWord(message.suggestion!);

@@ -211,15 +211,6 @@ All responses are JSON; errors are `{ error, ... }`.
   the on-screen keyboard is up, `src/lib/viewport.ts` sets both to the visual viewport, so
   iOS doesn't scroll the page (blank space, then a jump) and the game fits above the
   keyboard; the map's min-height is a share of `--app-height` so it can shrink there.
-  Safari reports the keyboard's size late, so when the player touches the field the game
-  shrinks at once to the last keyboard height seen (`subtext-keyboard` in localStorage,
-  else 40% of the screen), then once more after the viewport has been still for 150 ms;
-  never per animation frame (that made the scope jitter). On blur it goes straight back to
-  full height. Any scroll Safari makes is undone, `html`/`body` are locked
-  (`overflow: hidden`, `body` fixed) so iOS can't scroll the document by the keyboard's
-  height, and Fire keeps focus in the field (`preventDefault` on pointerdown), so the
-  keyboard stays up between guesses. Safari has no `interactive-widget` support (WebKit
-  bug 259770), so none of this can be left to CSS there.
   Android Chrome resizes the layout itself (`interactiveWidget: "resizes-content"`).
 - Map labels (`map-layout.ts`): placed in guess order so earlier ones stay put; each tries
   its usual side (right on the left half), the other side, then a line up or down with a
