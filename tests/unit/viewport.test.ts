@@ -11,30 +11,33 @@ function setUp(innerHeight: number) {
     removeProperty: (k: string) => props.delete(k),
   };
   vi.stubGlobal("window", { innerHeight, visualViewport: vv });
-  vi.stubGlobal("document", { documentElement: { style } });
+  const dataset: Record<string, string> = {};
+  vi.stubGlobal("document", { documentElement: { style, dataset } });
   vi.stubGlobal("requestAnimationFrame", (cb: () => void) => (cb(), 1));
   vi.stubGlobal("cancelAnimationFrame", () => {});
   const move = (change: Partial<typeof vv>) => {
     Object.assign(vv, change);
     vv.dispatchEvent(new Event("resize"));
   };
-  return { props, move };
+  return { props, move, dataset };
 }
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("trackVisibleArea", () => {
   it("follows the area above the keyboard and lets go when it closes", () => {
-    const { props, move } = setUp(660);
+    const { props, move, dataset } = setUp(660);
     const stop = trackVisibleArea();
     expect(props.size).toBe(0);
 
     move({ height: 340, offsetTop: 12 });
     expect(props.get("--visible-height")).toBe("340px");
     expect(props.get("--visible-top")).toBe("12px");
+    expect("keyboard" in dataset).toBe(true);
 
     move({ height: 660, offsetTop: 0 });
     expect(props.size).toBe(0);
+    expect("keyboard" in dataset).toBe(false);
     stop();
   });
 

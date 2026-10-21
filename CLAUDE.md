@@ -207,19 +207,19 @@ All responses are JSON; errors are `{ error, ... }`.
 - One screen, no scrolling, on phones down to 375×553 (iPhone SE with browser bars): a
   column where the map keeps its shape and shrinks when the rest needs room, "Next pair"
   sits beside the score, and a `max-height: 640px` query tightens small screens.
-  **The keyboard never resizes the game.** The layout lives in `.stage` (always 100dvh);
-  `main.game` is a fixed scrolling window onto it. While the on-screen keyboard is up,
-  `src/lib/viewport.ts` sets `--visible-height` / `--visible-top` to the visual viewport, so
-  the window shrinks to the area above the keyboard; the stage (and the scope) keep their
-  size and scroll under it. The `.dock` (guess bar + status line) is `position: sticky;
-  bottom: 0`, so it rides just above the keyboard. `html`/`body` don't scroll at all (iOS
-  would scroll the document by the keyboard's height). Fire and the spelling suggestion
-  `preventDefault` on pointerdown so focus, and the keyboard, stay up between guesses.
-  Safari has no `interactive-widget` (WebKit bug 259770) and Android Chrome's default
-  (`resizes-visual`) matches it, so both take the same path; don't set
-  `interactiveWidget: "resizes-content"`, it would resize the layout on Android. An
-  earlier version resized the game to fit above the keyboard, and the scope jumped and
-  jittered on Safari.
+  **The keyboard never rescales the scope.** `main.game` is a fixed window onto `.stage`
+  (100dvh). While the on-screen keyboard is up, `src/lib/viewport.ts` sets `data-keyboard`,
+  `--visible-height` and `--visible-top` on `<html>` from the visual viewport; the stage
+  then takes the visible height and the map takes what's left, with its SVG at its normal
+  size, so the scope is cropped from the bottom (the empty part below the clues first)
+  instead of shrinking. The `.dock` (guess bar + status line) sits right under it, just
+  above the keyboard. `html`/`body` don't scroll at all (iOS would scroll the document by
+  the keyboard's height). Fire and the spelling suggestion `preventDefault` on pointerdown
+  so focus, and the keyboard, stay up between guesses. Safari has no `interactive-widget`
+  (WebKit bug 259770) and Android Chrome's default (`resizes-visual`) matches it, so both
+  take the same path; don't set `interactiveWidget: "resizes-content"`. Earlier versions
+  scaled the game to fit (the scope jumped and jittered on Safari) and then scrolled it
+  under the bar.
 - Map labels (`map-layout.ts`): placed in guess order so earlier ones stay put; each tries
   its usual side (right on the left half), the other side, then a line up or down with a
   leader, avoiding blips, contacts, the torpedo rack, the target and other labels. Labels

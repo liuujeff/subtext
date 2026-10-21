@@ -57,6 +57,11 @@ main.game::-webkit-scrollbar{display:none}
 /* The guess bar and status line, in the panel colour so the scope scrolls
    under it cleanly. */
 .dock{position:sticky;bottom:0;z-index:2;flex:none;margin:0 -16px;padding:0 16px;background:var(--paper)}
+/* Keyboard up: the stage fits the visible area and the scope keeps its scale,
+   cropped from the bottom (the empty part below the clues goes first). */
+:root[data-keyboard] .stage{height:var(--visible-height)}
+:root[data-keyboard] .map{flex:1 1 0;min-height:0}
+:root[data-keyboard] .map svg{flex:none}
 header.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 h1{font-size:1.55rem;line-height:1;margin:0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
   color:var(--glow);text-shadow:0 0 12px var(--shine)}
