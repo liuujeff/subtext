@@ -151,7 +151,8 @@ answers come only after the server confirms the round is over.
   `upload.py` never changes or removes it, and `upload.py vocab --force` clears both.
 - `daily_results(player, expire_secs)` → one row per played daily (date, finished rounds, points,
   rank-1 hits), the source of streaks and stats; `merge_guest(guest, user)` moves a guest's
-  rounds to an account. Server only, like `score_guess`. PostgREST caps a response at 1,000
+  rounds to an account; `day_distribution(date, expire_secs, rounds)` → totals histogram for
+  one day. Server only, like `score_guess`. PostgREST caps a response at 1,000
   rows, so stats stop seeing days past ~1,000 played.
 - `score_guess(puzzle_id, word)` → rank, lean, objective. `suggest_words(word)` → spelling
   candidates (trigram index, ≤ 2 edits, ≤ 1 for short words, sound-alike bonus via Double
@@ -188,6 +189,10 @@ All responses are JSON; errors are `{ error, ... }`.
   `not_started`, `round_over` (also when time is up), `not_found` (missing or future
   puzzle), `conflict`, `bad_request`, `rate_limited`. Past daily puzzles are playable.
 - `GET /api/reveal?puzzleId=` → `{ top: [{ word, points }] }`, else `round_not_over` (403).
+- `GET /api/distribution` → `{ date, buckets, players, total }`: today's totals for everyone who
+  finished the day, in ten 50-point buckets, and this player's own total (null until they
+  finish). Shown as bars on the day summary. Counts only, no ids or words; it aggregates over
+  all of today's rounds on each call (rate-limited like reads), so cache it if traffic grows.
 - `GET /api/stats` → `Stats` (`src/lib/game/stats.ts`), for guests and signed-in players alike.
 - `POST /api/account/link` → `{ merged }`; needs a token (`unauthorized` otherwise); a no-op
   without a guest cookie.

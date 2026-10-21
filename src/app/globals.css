@@ -165,6 +165,12 @@ button:disabled{opacity:.4;cursor:default}
 .summary .of{font-family:var(--mono);color:var(--soft)}
 .summary .streak{font-family:var(--mono);color:var(--glow)}
 .summary p{margin:6px 0}
+.dist{margin:8px 0 0}
+.dist .bars{display:flex;align-items:flex-end;gap:3px;height:44px;border-bottom:1px solid var(--line)}
+.dist .bars span{flex:1;background:var(--line);border-radius:2px 2px 0 0;min-height:2px}
+.dist .bars span.mine{background:var(--glow);box-shadow:0 0 8px var(--shine)}
+.dist .axis{display:flex;justify-content:space-between;font:.65rem var(--mono);color:var(--soft);margin-top:2px}
+.dist figcaption{font-size:.75rem;color:var(--soft);margin-top:2px}
 .summary .row button{padding:10px 14px;font-size:.9rem;letter-spacing:.04em}
 .summary textarea.unseen{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 textarea{width:100%;font:.9rem var(--mono);border-radius:10px;border:1px solid var(--line);

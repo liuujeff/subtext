@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 
 import { dayNumber } from "@/lib/game/day";
 import { bestPoints, shareSymbol } from "@/lib/game/rules";
-import type { Guess, PuzzleRound } from "@/lib/game/types";
+import type { DistributionResponse, Guess, PuzzleRound } from "@/lib/game/types";
 
 export function RoundBars({ count, current }: { count: number; current: number }) {
   return (
@@ -33,7 +33,7 @@ export function RevealPanel(props: {
   );
 }
 
-export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak: number; onRandom: () => void }) {
+export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak: number; distribution: DistributionResponse | null; onRandom: () => void }) {
   const scores = props.rounds.map((r) => bestPoints(r.guesses));
   const total = scores.reduce((sum, s) => sum + s, 0);
   const max = props.rounds.length * 100;
@@ -68,6 +68,7 @@ export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak:
         <span className="total">{total}</span> <span className="of">of {max}</span>
         {props.streak > 1 && <span className="streak"> · {props.streak}-day streak</span>}
       </div>
+      {props.distribution && props.distribution.players > 0 && <Distribution {...props.distribution} />}
       <textarea
         ref={shareRef}
         rows={3}
@@ -90,5 +91,38 @@ export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak:
         A new set of pairs arrives at midnight.
       </p>
     </div>
+  );
+}
+
+/** Everyone's totals for the day as bars, the player's own bucket lit. */
+function Distribution({ buckets, players, total }: Pick<DistributionResponse, "buckets" | "players" | "total">) {
+  const tallest = Math.max(...buckets);
+  const mine = total === null ? -1 : Math.min(Math.floor(total / 50), buckets.length - 1);
+  const width = 500 / buckets.length;
+  return (
+    <figure className="dist">
+      <div
+        className="bars"
+        role="img"
+        aria-label={`Totals today for ${players} ${players === 1 ? "player" : "players"}${total === null ? "" : `; yours is ${total}`}`}
+      >
+        {buckets.map((n, i) => (
+          <span
+            key={i}
+            className={i === mine ? "mine" : undefined}
+            style={{ height: `${n ? Math.max(6, (n / tallest) * 100) : 2}%` }}
+            title={`${i * width}–${(i + 1) * width - (i === buckets.length - 1 ? 0 : 1)}: ${n}`}
+          />
+        ))}
+      </div>
+      <div className="axis" aria-hidden="true">
+        <span>0</span>
+        <span>250</span>
+        <span>500</span>
+      </div>
+      <figcaption>
+        Everyone today · {players} {players === 1 ? "player" : "players"}
+      </figcaption>
+    </figure>
   );
 }

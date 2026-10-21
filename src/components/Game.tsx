@@ -25,7 +25,7 @@ import {
   WORD_PATTERN,
 } from "@/lib/game/rules";
 import type { Stats } from "@/lib/game/stats";
-import type { PuzzleRound } from "@/lib/game/types";
+import type { DistributionResponse, PuzzleRound } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
 
 import { GuessMap, SummaryMap } from "./GuessMap";
@@ -165,15 +165,21 @@ export function Game({ children }: { children: ReactNode }) {
   const timedOut = !!round && !isRoundOver(round.guesses) && timeUp(round, now);
   const over = round ? isRoundOver(round.guesses) || timedOut : false;
   const inSummary = view.mode === "daily" && daily.status === "ready" && view.round >= daily.rounds.length;
-  // The day's streak, once the day's summary is up.
+  // The day's streak and everyone's totals, once the day's summary is up.
   const [stats, setStats] = useState<Stats | null>(null);
+  const [distribution, setDistribution] = useState<DistributionResponse | null>(null);
   useEffect(() => {
     if (!inSummary) return;
     let active = true;
+    // The summary is complete without either.
     api
       .stats()
       .then((s) => active && setStats(s))
-      .catch(() => {}); // the summary is complete without it
+      .catch(() => {});
+    api
+      .distribution()
+      .then((d) => active && setDistribution(d))
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -415,7 +421,7 @@ export function Game({ children }: { children: ReactNode }) {
         />
       )}
       {inSummary && daily.status === "ready" && (
-        <DaySummary date={daily.date} rounds={daily.rounds} streak={stats?.currentStreak ?? 0} onRandom={() => void startRandom()} />
+        <DaySummary date={daily.date} rounds={daily.rounds} streak={stats?.currentStreak ?? 0} distribution={distribution} onRandom={() => void startRandom()} />
       )}
 
       <p className={message?.error ? "msg err" : "msg"} role="status" aria-live="polite">
