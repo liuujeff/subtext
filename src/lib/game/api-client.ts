@@ -4,9 +4,11 @@ import type {
   ApiErrorBody,
   ApiErrorCode,
   GuessResponse,
+  LinkResponse,
   RandomResponse,
   RevealResponse,
   StartResponse,
+  StatsResponse,
   TodayResponse,
 } from "./types";
 
@@ -55,4 +57,6 @@ export const api = {
   guess: (puzzleId: number, word: string) => call<GuessResponse>("/api/guess", { puzzleId, word }),
   reveal: (puzzleId: number) => call<RevealResponse>(`/api/reveal?puzzleId=${puzzleId}`),
   random: (exclude?: number) => call<RandomResponse>("/api/random", { exclude }),
+  stats: () => call<StatsResponse>("/api/stats"),
+  link: () => call<LinkResponse>("/api/account/link", {}),
 };

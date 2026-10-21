@@ -1,3 +1,5 @@
+import type { Stats } from "./stats";
+
 // Shapes of the /api responses. Nothing here may carry vectors, score arrays
 // or answers before a round is over.
 
@@ -27,6 +29,10 @@ export type GuessResponse = { points: number; rank: number; lean: number; over: 
 export type RevealResponse = { top: TopAnswer[] };
 
 export type RandomResponse = PuzzleRound;
+
+export type StatsResponse = Stats;
+
+export type LinkResponse = { merged: boolean };
 
 export type ApiErrorCode =
   | "unauthorized"
