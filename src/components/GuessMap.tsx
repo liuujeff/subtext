@@ -91,14 +91,17 @@ const RACK_Y = TUBES_BOX.y0 + 10;
 const RACK_SCALE = 1.25;
 const tubeMouth = (k: number): Point => ({ x: RACK_X + 35 * RACK_SCALE, y: RACK_Y + k * 14 * RACK_SCALE });
 
-/** One torpedo per guess, in tubes; fired from the top down. The next one blinks while `arming`. */
+/**
+ * The torpedoes left, in tubes. Firing takes the top one out and the rest move
+ * up, so there are no empty tubes. The top one blinks while `arming`.
+ */
 function Torpedoes({ fired, arming }: { fired: number; arming: boolean }) {
   return (
     <g transform={`translate(${RACK_X} ${RACK_Y}) scale(${RACK_SCALE})`}>
-      {Array.from({ length: GUESSES_PER_ROUND }, (_, k) => (
-        <g key={k} transform={`translate(0 ${k * 14})`}>
+      {Array.from({ length: Math.max(0, GUESSES_PER_ROUND - fired) }, (_, k) => (
+        <g key={fired + k} transform={`translate(0 ${k * 14})`}>
           <rect x={-3} y={-6} width={38} height={12} rx={6} className="tube" />
-          <g className={k < fired ? "torpedo fired" : arming && k === fired ? "torpedo armed" : "torpedo"}>
+          <g className={arming && k === 0 ? "torpedo armed" : "torpedo"}>
             <rect x={4} y={-3} width={26} height={6} rx={3} />
             <path d="M7.5 -2.5 L1.5 -5.5 L3.5 -2.5 Z M7.5 2.5 L1.5 5.5 L3.5 2.5 Z" />
             <rect x={0.4} y={-2.6} width={1.6} height={5.2} rx={0.8} />
@@ -250,7 +253,7 @@ export function GuessMap(props: {
       <Torpedoes fired={guesses.length} arming={!!props.arming} />
       {props.secondsLeft != null && <Clock seconds={props.secondsLeft} />}
       {shot !== -1 && (
-        <Run key={guesses[shot].word} from={tubeMouth(shot)} to={spots[shot]} glow={`${id}glow`} />
+        <Run key={guesses[shot].word} from={tubeMouth(0)} to={spots[shot]} glow={`${id}glow`} />
       )}
       {spots.map((p, i) => (
         <g key={guesses[i].word} className={incoming(i, "blip")}>
