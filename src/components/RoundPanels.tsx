@@ -39,7 +39,8 @@ export function DaySummary(props: { date: string; rounds: PuzzleRound[]; onRando
   const max = props.rounds.length * 100;
   // Rendered only in the browser, once today's rounds have loaded, so location is there.
   const share = [
-    `Subtext day ${dayNumber(props.date)}: ${total}/${max}`,
+    `Subtext #${dayNumber(props.date)}`,
+    `${total}/${max}`,
     scores.map(shareSymbol).join(" "),
     window.location.origin,
   ].join("\n");
