@@ -200,6 +200,8 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 .section summary:focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
 .section[open]{padding-bottom:14px}
 .menu .row{margin-top:16px}
+.menu .modes{flex-wrap:nowrap}
+.menu .modes button{flex:1;padding-inline:8px}
 .menu .close{width:40px;height:40px;padding:0;font-size:1.5rem;line-height:1;border:0;margin-right:-8px}
 /* System / Light / Dark: radio buttons drawn as one segmented control. */
 .theme{display:flex;gap:6px;margin:22px 0 0;padding:0;border:0}

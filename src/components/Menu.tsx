@@ -84,9 +84,9 @@ export function Menu({
             <p className="lede">Find one word that sits between two others in meaning.</p>
             {children}
           </details>
-          <div className="row">
+          <div className="row modes">
             <button type="button" onClick={close}>
-              Play today’s pairs
+              Today’s pairs
             </button>
             <button
               type="button"
@@ -96,7 +96,7 @@ export function Menu({
                 onRandom();
               }}
             >
-              Play a random pair
+              Unlimited
             </button>
           </div>
           <Account open={open} onMerged={onAccountChange} onSignedOut={onAccountChange} />
