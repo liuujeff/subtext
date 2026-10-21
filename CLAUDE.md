@@ -37,7 +37,8 @@ pipeline that builds all the word data. Answers never reach the browser.
   guess"), and share text: the total, one emoji per
   pair (🎯 90+, 💥 60+, 🌊 30+, 🫧 below) and the site's link (`location.origin`).
 - **Random mode**: unlimited extra pairs from a separate pool, same rules.
-- Accounts are optional: without one, progress is tied to the browser by a cookie; "Sign in with
+- Accounts are built but **switched off for now** (`SIGN_IN_ENABLED` in `Account.tsx` and
+  `[auth.external.google]` in `supabase/config.toml`; the API routes stay). Without one, progress is tied to the browser by a cookie; "Sign in with
   Google" (in the menu drawer) keeps it across devices and moves the browser's progress into the
   account. "How to play" (menu, top left) opens on a player's first visit.
 - **Streaks and stats** (drawer, and the streak on the day summary): a day counts once all five

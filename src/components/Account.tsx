@@ -6,6 +6,11 @@ import { api } from "@/lib/game/api-client";
 import type { Stats } from "@/lib/game/stats";
 import { getSupabaseBrowser, signInWithGoogle, signOut } from "@/lib/supabase/browser";
 
+// Google sign-in is switched off for now (also `enabled = false` for the
+// provider in supabase/config.toml). Set to true to bring back the sign-in
+// button and the guest merge.
+const SIGN_IN_ENABLED = false;
+
 // Which user this tab has already merged guest progress into, so a page load
 // doesn't ask again.
 const LINKED_KEY = "subtext-linked";
@@ -47,6 +52,7 @@ export function Account({
   });
 
   useEffect(() => {
+    if (!SIGN_IN_ENABLED) return;
     const { data } = getSupabaseBrowser().auth.onAuthStateChange((event, session) => {
       const next = session?.user ? { id: session.user.id, email: session.user.email ?? null } : null;
       setUser((prev) => (prev?.id === next?.id ? prev : next));
@@ -64,7 +70,7 @@ export function Account({
   }, []);
 
   // Fresh numbers each time the drawer opens (and when the account changes).
-  const userId = user === undefined ? undefined : (user?.id ?? null);
+  const userId = !SIGN_IN_ENABLED ? null : user === undefined ? undefined : (user?.id ?? null);
   useEffect(() => {
     if (!open || userId === undefined) return;
     let active = true;
@@ -112,7 +118,7 @@ export function Account({
         <p>{failed ? "Couldn’t load your stats." : "Loading…"}</p>
       )}
       <p className="note">A streak counts days when you finished all five pairs.</p>
-      {user ? (
+      {!SIGN_IN_ENABLED ? null : user ? (
         <div className="who">
           <span>Signed in{user.email ? ` as ${user.email}` : ""}</span>
           <button type="button" className="ghost" onClick={() => void leave()}>

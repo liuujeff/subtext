@@ -338,7 +338,7 @@ email_optional = false
 # Google sign-in. Credentials come from supabase/.env (see supabase/.env.example); the
 # redirect URI to register in Google Cloud is http://127.0.0.1:54321/auth/v1/callback.
 [auth.external.google]
-enabled = true
+enabled = false # switched off for now; set true (and see supabase/.env.example) to bring sign-in back
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = true
