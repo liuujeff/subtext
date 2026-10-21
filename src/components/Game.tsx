@@ -354,7 +354,7 @@ export function Game({ children }: { children: ReactNode }) {
   else if (daily.status === "loading" && view.mode === "daily") status = "Loading today’s pairs…";
   else if (round && !started) spoken = `Press Start to see the pair. You’ll have ${ROUND_SECONDS} seconds.`;
   else if (round && timedOut) status = "Time’s up.";
-  else if (round && !round.guesses.length) status = "Three torpedoes. Your closest hit counts.";
+  else if (round && !round.guesses.length) spoken = "Three torpedoes. Your closest hit counts.";
   else if (round) {
     const latest = round.guesses[round.guesses.length - 1];
     const left = GUESSES_PER_ROUND - round.guesses.length;
