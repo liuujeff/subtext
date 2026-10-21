@@ -12,9 +12,6 @@
   --button-shine:rgb(8 122 64 / .2); --a-shine:transparent; --b-shine:transparent;
   --scan:rgb(14 42 27 / .03); --shadow:rgb(14 42 27 / .3);
   --mono:var(--font-mono),ui-monospace,"SF Mono",Menlo,monospace;
-  /* The game's box: the whole screen, or the part above the on-screen
-     keyboard while it's up (set from JS in src/lib/viewport.ts). */
-  --app-height:100dvh; --app-top:0px;
   color-scheme:light;
   box-sizing:border-box;
 }
@@ -39,15 +36,27 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:inherit}
+/* The page itself never scrolls (iOS would otherwise scroll the document by
+   the keyboard's height); main.game below is the only scroller. */
+html,body{overflow:hidden;overscroll-behavior:none}
 body{margin:0;color:var(--ink);
   background:radial-gradient(120% 60% at 50% 0%,var(--wash) 0%,transparent 70%) no-repeat var(--paper);
   font:400 17px/1.5 var(--font-body),system-ui,-apple-system,"Segoe UI",sans-serif;}
 h1,h2,h3{font-family:var(--mono)}
 
-/* Pinned to the visible area, so opening the keyboard never scrolls the page. */
-main.game{position:fixed;top:var(--app-top);left:0;right:0;max-width:520px;margin:0 auto;height:var(--app-height);
-  display:flex;flex-direction:column;
+/* main.game is a window onto the stage: the whole screen, or while the
+   on-screen keyboard is up, the part above it (--visible-*, set by
+   src/lib/viewport.ts), scrolling over a stage that keeps its full height. So
+   the keyboard never resizes the scope; the dock sticks to the window's
+   bottom edge, just above the keyboard. */
+main.game{position:fixed;top:var(--visible-top,0px);left:0;right:0;max-width:520px;margin:0 auto;
+  height:var(--visible-height,100dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+main.game::-webkit-scrollbar{display:none}
+.stage{height:100dvh;display:flex;flex-direction:column;
   padding:max(10px,env(safe-area-inset-top)) 16px max(12px,env(safe-area-inset-bottom))}
+/* The guess bar and status line, in the panel colour so the scope scrolls
+   under it cleanly. */
+.dock{position:sticky;bottom:0;z-index:2;flex:none;margin:0 -16px;padding:0 16px;background:var(--paper)}
 header.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 h1{font-size:1.55rem;line-height:1;margin:0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
   color:var(--glow);text-shadow:0 0 12px var(--shine)}
@@ -67,7 +76,7 @@ button.back{margin-left:auto;padding:6px 12px;font-size:.8rem}
 
 /* The scope's panel, with faint scanlines over it. */
 .map{background:var(--sheet);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;
-  flex:0 1 auto;min-height:min(190px,calc(var(--app-height) * .34));display:flex;flex-direction:column;
+  flex:0 1 auto;min-height:190px;display:flex;flex-direction:column;
   box-shadow:inset 0 0 40px var(--shine-soft),0 0 24px var(--shine-soft)}
 .map::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(to bottom,var(--scan) 0 1px,transparent 1px 3px)}
@@ -243,7 +252,7 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
   header.top{margin-bottom:6px}
   .pair{padding-top:8px}
   .pair .w{font-size:1.2rem}
-  .map{min-height:min(150px,calc(var(--app-height) * .27))}
+  .map{min-height:150px}
   form,.start{margin:8px 0 2px}
   input,form button{padding-top:8px;padding-bottom:8px}
   .start button{padding-block:10px}

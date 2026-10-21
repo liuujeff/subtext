@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fitToVisualViewport } from "@/lib/viewport";
+import { trackVisibleArea } from "@/lib/viewport";
 
 // A stand-in for window.visualViewport and <html>'s inline style.
 function setUp(innerHeight: number) {
@@ -12,6 +12,8 @@ function setUp(innerHeight: number) {
   };
   vi.stubGlobal("window", { innerHeight, visualViewport: vv });
   vi.stubGlobal("document", { documentElement: { style } });
+  vi.stubGlobal("requestAnimationFrame", (cb: () => void) => (cb(), 1));
+  vi.stubGlobal("cancelAnimationFrame", () => {});
   const move = (change: Partial<typeof vv>) => {
     Object.assign(vv, change);
     vv.dispatchEvent(new Event("resize"));
@@ -21,25 +23,25 @@ function setUp(innerHeight: number) {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("fitToVisualViewport", () => {
-  it("fits the game above the keyboard and lets go when it closes", () => {
+describe("trackVisibleArea", () => {
+  it("follows the area above the keyboard and lets go when it closes", () => {
     const { props, move } = setUp(660);
-    const stop = fitToVisualViewport();
+    const stop = trackVisibleArea();
     expect(props.size).toBe(0);
 
     move({ height: 340, offsetTop: 12 });
-    expect(props.get("--app-height")).toBe("340px");
-    expect(props.get("--app-top")).toBe("12px");
+    expect(props.get("--visible-height")).toBe("340px");
+    expect(props.get("--visible-top")).toBe("12px");
 
     move({ height: 660, offsetTop: 0 });
     expect(props.size).toBe(0);
     stop();
   });
 
-  it("ignores browser bars and pinch-zoom", () => {
+  it("ignores browser bars, iOS's leftover gap and pinch-zoom", () => {
     const { props, move } = setUp(660);
-    const stop = fitToVisualViewport();
-    move({ height: 610 }); // a toolbar, not a keyboard
+    const stop = trackVisibleArea();
+    move({ height: 636 }); // ~24px left after the keyboard closes (iOS 26)
     expect(props.size).toBe(0);
     move({ height: 330, scale: 2 }); // zoomed in
     expect(props.size).toBe(0);
@@ -48,7 +50,7 @@ describe("fitToVisualViewport", () => {
 
   it("clears its settings when stopped", () => {
     const { props, move } = setUp(660);
-    const stop = fitToVisualViewport();
+    const stop = trackVisibleArea();
     move({ height: 300 });
     expect(props.size).toBe(2);
     stop();

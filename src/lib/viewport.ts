@@ -1,43 +1,49 @@
-// Keeps the game inside the part of the screen the player can see while the
-// on-screen keyboard is up.
+// Tracks the part of the screen the on-screen keyboard leaves visible.
 //
-// iOS Safari (and Android browsers that ignore interactive-widget) shrink only
-// the visual viewport when the keyboard opens. A page sized to 100dvh then
-// sits partly under the keyboard, and the browser scrolls it up to reach the
-// input: blank page first, then the game jumps. Instead, while the keyboard is
-// up this sets --app-height and --app-top on <html> to the visible area, and
-// globals.css pins main.game there (position: fixed, so there's nothing to
-// scroll). Android Chrome resizes the layout itself (interactiveWidget in
-// layout.tsx), so 100dvh already fits there and these stay unset.
+// Every iOS browser (all WebKit) and Android Chrome shrink only the visual
+// viewport when the keyboard opens; the page's layout, and 100dvh, stay the
+// same. The game keeps that full-height layout, so nothing in it resizes.
+// While the keyboard is up this sets --visible-height and --visible-top on
+// <html> to the visible area; globals.css makes main.game a scrolling window
+// of that size over the unchanged layout, with the guess bar stuck to its
+// bottom edge, just above the keyboard. Only the window changes size, so the
+// scope stays put and the player scrolls to see the rest of it.
 
 // The visual viewport is this much shorter than the layout one: a keyboard,
-// not just a browser bar.
+// not a browser bar (iOS 26 can leave ~24px behind after the keyboard closes).
 const KEYBOARD_PX = 100;
 
 /** Starts tracking the visual viewport; returns a function that stops. */
-export function fitToVisualViewport(): () => void {
+export function trackVisibleArea(): () => void {
   const vv = window.visualViewport;
   if (!vv) return () => {};
   const root = document.documentElement;
+  let frame = 0;
 
   const clear = () => {
-    root.style.removeProperty("--app-height");
-    root.style.removeProperty("--app-top");
+    root.style.removeProperty("--visible-height");
+    root.style.removeProperty("--visible-top");
   };
-  const fit = () => {
-    // Pinch-zoom also shrinks the visual viewport; leave the layout alone then.
+  const update = () => {
+    // Pinch-zoom also shrinks the visual viewport; that isn't a keyboard.
     const zoomed = Math.abs(vv.scale - 1) > 0.01;
     if (zoomed || window.innerHeight - vv.height < KEYBOARD_PX) return clear();
-    root.style.setProperty("--app-height", `${Math.round(vv.height)}px`);
-    root.style.setProperty("--app-top", `${Math.round(vv.offsetTop)}px`);
+    root.style.setProperty("--visible-height", `${Math.round(vv.height)}px`);
+    root.style.setProperty("--visible-top", `${Math.round(vv.offsetTop)}px`);
+  };
+  // At most once per frame while the keyboard animates.
+  const schedule = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(update);
   };
 
-  fit();
-  vv.addEventListener("resize", fit);
-  vv.addEventListener("scroll", fit);
+  update();
+  vv.addEventListener("resize", schedule);
+  vv.addEventListener("scroll", schedule);
   return () => {
-    vv.removeEventListener("resize", fit);
-    vv.removeEventListener("scroll", fit);
+    vv.removeEventListener("resize", schedule);
+    vv.removeEventListener("scroll", schedule);
+    cancelAnimationFrame(frame);
     clear();
   };
 }

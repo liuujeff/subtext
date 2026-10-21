@@ -28,7 +28,7 @@ import {
 import type { Stats } from "@/lib/game/stats";
 import type { DistributionResponse, PuzzleRound } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
-import { fitToVisualViewport } from "@/lib/viewport";
+import { trackVisibleArea } from "@/lib/viewport";
 
 import { GuessMap, SummaryMap } from "./GuessMap";
 import { bearing, LANDING } from "./map-layout";
@@ -151,8 +151,9 @@ export function Game({ children }: { children: ReactNode }) {
     };
   }, [applyToday]);
 
-  // Fit the game above the on-screen keyboard while it's open.
-  useEffect(() => fitToVisualViewport(), []);
+  // While the on-screen keyboard is up, the page becomes a scrolling window
+  // above it, with the guess bar at its bottom; the layout itself never resizes.
+  useEffect(() => trackVisibleArea(), []);
 
   const reloadToday = () => void fetchToday().then(applyToday);
 
@@ -358,139 +359,151 @@ export function Game({ children }: { children: ReactNode }) {
 
   // One screen, no scrolling: the map takes whatever height is left. --land is
   // when a fired guess lands, for the map's animations and the reveal after it.
-  return (
-    <main className="game" style={{ "--land": `${LANDING}s` } as CSSProperties}>
-      <header className="top">
-        <Menu onRandom={() => void startRandom()} onAccountChange={reloadToday}>{children}</Menu>
-        <h1>Subtext</h1>
-        {view.mode === "random" ? (
-          <button type="button" className="ghost back" onClick={backToDaily}>
-            Back to today
-          </button>
-        ) : (
-          <span className="day">{dayLabel}</span>
-        )}
-        <SoundToggle />
-      </header>
-
-      {view.mode === "random" ? <RoundBars count={1} current={0} /> : <RoundBars count={roundCount} current={view.round} />}
-
-      {inSummary && daily.status === "ready" ? (
-        <section className="map" aria-label="Your scores today">
-          <SummaryMap
-            pairs={daily.rounds.map((r) => ({ a: r.a ?? "", b: r.b ?? "" }))}
-            scores={daily.rounds.map((r) => bestPoints(r.guesses))}
-            words={daily.rounds.map((r) => bestGuess(r.guesses)?.word ?? null)}
-          />
-        </section>
-      ) : (
-        <section className="map" aria-label="Sonar of your guesses">
-          {/* Before the start the pair is unknown here too: the server hasn't sent it. */}
-          <div className="pair">
-            <span className="w wa">{round && !started ? "?" : round?.a}</span>
-            <span className="and">and</span>
-            <span className="w wb">{round && !started ? "?" : round?.b}</span>
-          </div>
-          <GuessMap
-            guesses={round?.guesses ?? []}
-            a={round?.a ?? ""}
-            b={round?.b ?? ""}
-            firing={thisShot?.hit ? thisShot.word : null}
-            arming={!!thisShot && !thisShot.hit}
-            secondsLeft={secondsLeft}
-          />
-        </section>
-      )}
-
-      {round && !started && (
-        <div className="start">
-          <button ref={startRef} type="button" onClick={() => void startRound()} disabled={pending}>
-            Start
-          </button>
-        </div>
-      )}
-      {round && started && !over && (
-        <form ref={formRef} onSubmit={submit} autoComplete="off">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            type="text"
-            inputMode="text"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            placeholder="Type a word"
-            aria-label="Your guess"
-            maxLength={MAX_WORD_LENGTH}
-          />
-          <button type="submit" disabled={pending}>
-            Fire
-          </button>
-        </form>
-      )}
-      {round && over && (
-        <RevealPanel
-          guesses={round.guesses}
-          nextLabel={view.mode === "random" ? "Another random pair" : isLastDaily ? "See today’s total" : "Next pair"}
-          onNext={next}
-        />
-      )}
-      {inSummary && daily.status === "ready" && (
-        <DaySummary
-          date={daily.date}
-          rounds={daily.rounds}
-          streak={stats?.currentStreak ?? 0}
-          distribution={distribution}
-          onRandom={() => void startRandom()}
-        />
-      )}
-
-      <p className={message?.error ? "msg err" : "msg"} role="status" aria-live="polite">
-        {status}
-        {spoken && <span className="sr-only">{spoken}</span>}
-        {timeWarning && <span className="sr-only">{` ${timeWarning}`}</span>}
-        {message?.suggestion && (
-          <>
-            {" "}
-            <button
-              type="button"
-              className="suggest"
-              onClick={() => {
-                setInput(message.suggestion!);
-                void guessWord(message.suggestion!);
-              }}
-            >
-              {message.suggestion}
-            </button>
-            ?
-          </>
-        )}
-      </p>
-
-      {view.mode === "daily" && daily.status === "error" && (
-        <div className="row">
-          <p className="msg err">Couldn’t load today’s pairs.</p>
+  // The guess bar is showing.
+  const typing = !!round && started && !over;
+  const statusLine = (
+    <p className={message?.error ? "msg err" : "msg"} role="status" aria-live="polite">
+      {status}
+      {spoken && <span className="sr-only">{spoken}</span>}
+      {timeWarning && <span className="sr-only">{` ${timeWarning}`}</span>}
+      {message?.suggestion && (
+        <>
+          {" "}
           <button
             type="button"
+            className="suggest"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => {
-              setDaily({ status: "loading" });
-              reloadToday();
+              setInput(message.suggestion!);
+              void guessWord(message.suggestion!);
             }}
           >
-            Try again
+            {message.suggestion}
           </button>
-        </div>
+          ?
+        </>
       )}
-      {view.mode === "daily" && daily.status === "none" && (
-        <div className="row">
-          <p className="msg">No pairs are scheduled for today.</p>
-          <button type="button" onClick={() => void startRandom()} disabled={pending}>
-            Play a random pair
-          </button>
-        </div>
-      )}
+    </p>
+  );
 
+  return (
+    <main className="game" style={{ "--land": `${LANDING}s` } as CSSProperties}>
+      <div className="stage">
+        <header className="top">
+          <Menu onRandom={() => void startRandom()} onAccountChange={reloadToday}>{children}</Menu>
+          <h1>Subtext</h1>
+          {view.mode === "random" ? (
+            <button type="button" className="ghost back" onClick={backToDaily}>
+              Back to today
+            </button>
+          ) : (
+            <span className="day">{dayLabel}</span>
+          )}
+          <SoundToggle />
+        </header>
+
+        {view.mode === "random" ? <RoundBars count={1} current={0} /> : <RoundBars count={roundCount} current={view.round} />}
+
+        {inSummary && daily.status === "ready" ? (
+          <section className="map" aria-label="Your scores today">
+            <SummaryMap
+              pairs={daily.rounds.map((r) => ({ a: r.a ?? "", b: r.b ?? "" }))}
+              scores={daily.rounds.map((r) => bestPoints(r.guesses))}
+              words={daily.rounds.map((r) => bestGuess(r.guesses)?.word ?? null)}
+            />
+          </section>
+        ) : (
+          <section className="map" aria-label="Sonar of your guesses">
+            {/* Before the start the pair is unknown here too: the server hasn't sent it. */}
+            <div className="pair">
+              <span className="w wa">{round && !started ? "?" : round?.a}</span>
+              <span className="and">and</span>
+              <span className="w wb">{round && !started ? "?" : round?.b}</span>
+            </div>
+            <GuessMap
+              guesses={round?.guesses ?? []}
+              a={round?.a ?? ""}
+              b={round?.b ?? ""}
+              firing={thisShot?.hit ? thisShot.word : null}
+              arming={!!thisShot && !thisShot.hit}
+              secondsLeft={secondsLeft}
+            />
+          </section>
+        )}
+
+        {round && !started && (
+          <div className="start">
+            <button ref={startRef} type="button" onClick={() => void startRound()} disabled={pending}>
+              Start
+            </button>
+          </div>
+        )}
+        {round && over && (
+          <RevealPanel
+            guesses={round.guesses}
+            nextLabel={view.mode === "random" ? "Another random pair" : isLastDaily ? "See today’s total" : "Next pair"}
+            onNext={next}
+          />
+        )}
+        {inSummary && daily.status === "ready" && (
+          <DaySummary
+            date={daily.date}
+            rounds={daily.rounds}
+            streak={stats?.currentStreak ?? 0}
+            distribution={distribution}
+            onRandom={() => void startRandom()}
+          />
+        )}
+
+        {/* The guess bar and the status line; while the keyboard is up it stays above it. */}
+        <div className="dock">
+          {typing && (
+            <form ref={formRef} onSubmit={submit} autoComplete="off">
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                type="text"
+                inputMode="text"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="Type a word"
+                aria-label="Your guess"
+                maxLength={MAX_WORD_LENGTH}
+              />
+              {/* Firing keeps focus in the field, so the keyboard stays up between guesses. */}
+              <button type="submit" disabled={pending} onPointerDown={(e) => e.preventDefault()}>
+                Fire
+              </button>
+            </form>
+          )}
+          {statusLine}
+        </div>
+
+        {view.mode === "daily" && daily.status === "error" && (
+          <div className="row">
+            <p className="msg err">Couldn’t load today’s pairs.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setDaily({ status: "loading" });
+                reloadToday();
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {view.mode === "daily" && daily.status === "none" && (
+          <div className="row">
+            <p className="msg">No pairs are scheduled for today.</p>
+            <button type="button" onClick={() => void startRandom()} disabled={pending}>
+              Play a random pair
+            </button>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
