@@ -34,7 +34,8 @@ pipeline that builds all the word data. Answers never reach the browser.
   top-left corner shows the guesses left; the button is "Fire".
 - **After a round**: your score. **After the day**: the total,
   a stalk per pair (labelled with both words, the best guess and its score above, or "no
-  guess"), and share text: the total, one emoji per
+  guess"), a bell curve of everyone's totals today with a YOU marker and "Better than N% of
+  today's players", and share text: the total, one emoji per
   pair (🎯 80+, 💥 55+, 🌊 35+, 🫧 below) and the site's link (`location.origin`).
 - **Random mode**: unlimited extra pairs from a separate pool, same rules.
 - Accounts are built but **switched off for now** (`SIGN_IN_ENABLED` in `Account.tsx` and
@@ -151,8 +152,8 @@ answers come only after the server confirms the round is over.
   `upload.py` never changes or removes it, and `upload.py vocab --force` clears both.
 - `daily_results(player, expire_secs)` → one row per played daily (date, finished rounds, points,
   rank-1 hits), the source of streaks and stats; `merge_guest(guest, user)` moves a guest's
-  rounds to an account; `day_distribution(date, expire_secs, rounds)` → totals histogram for
-  one day. Server only, like `score_guess`. PostgREST caps a response at 1,000
+  rounds to an account; `day_distribution(date, expire_secs, rounds, total)` → players,
+  mean and standard deviation of one day's finished totals, and how many are below `total`. Server only, like `score_guess`. PostgREST caps a response at 1,000
   rows, so stats stop seeing days past ~1,000 played.
 - `score_guess(puzzle_id, word)` → rank, lean, objective. `suggest_words(word)` → spelling
   candidates (trigram index, ≤ 2 edits, ≤ 1 for short words, sound-alike bonus via Double
@@ -189,10 +190,13 @@ All responses are JSON; errors are `{ error, ... }`.
   `not_started`, `round_over` (also when time is up), `not_found` (missing or future
   puzzle), `conflict`, `bad_request`, `rate_limited`. Past daily puzzles are playable.
 - `GET /api/reveal?puzzleId=` → `{ top: [{ word, points }] }`, else `round_not_over` (403).
-- `GET /api/distribution` → `{ date, buckets, players, total }`: today's totals for everyone who
-  finished the day, in ten 50-point buckets, and this player's own total (null until they
-  finish). Shown as bars on the day summary. Counts only, no ids or words; it aggregates over
+- `GET /api/distribution` → `{ date, players, mean, sd, total, below }`: today's totals for
+  everyone who finished the day, and this player's own total and how many others scored
+  less (both null until they finish). `DayCurve.tsx` draws it as a normal curve with that
+  mean and spread (spread floored at 30 so a handful of players isn't a spike); the
+  percentage comes from `below`, not the curve. Aggregates only, no ids or words; it scans
   all of today's rounds on each call (rate-limited like reads), so cache it if traffic grows.
+  The summary asks again once after the grace period if today isn't finished on the server yet.
 - `GET /api/stats` → `Stats` (`src/lib/game/stats.ts`), for guests and signed-in players alike.
 - `POST /api/account/link` → `{ merged }`; needs a token (`unauthorized` otherwise); a no-op
   without a guest cookie.
@@ -201,8 +205,13 @@ All responses are JSON; errors are `{ error, ... }`.
 
 ### Frontend (`src/components/`)
 - One screen, no scrolling, on phones down to 375×553 (iPhone SE with browser bars): a
-  `100dvh` column where the map keeps its shape and shrinks when the rest needs room,
-  "Next pair" sits beside the score, and a `max-height: 640px` query tightens small screens.
+  column where the map keeps its shape and shrinks when the rest needs room, "Next pair"
+  sits beside the score, and a `max-height: 640px` query tightens small screens.
+  `main.game` is `position: fixed` at `--app-top` with height `--app-height` (100dvh). While
+  the on-screen keyboard is up, `src/lib/viewport.ts` sets both to the visual viewport, so
+  iOS doesn't scroll the page (blank space, then a jump) and the game fits above the
+  keyboard; the map's min-height is a share of `--app-height` so it can shrink there.
+  Android Chrome resizes the layout itself (`interactiveWidget: "resizes-content"`).
 - Map labels (`map-layout.ts`): placed in guess order so earlier ones stay put; each tries
   its usual side (right on the left half), the other side, then a line up or down with a
   leader, avoiding blips, contacts, the torpedo rack, the target and other labels. Labels
@@ -284,14 +293,15 @@ All responses are JSON; errors are `{ error, ... }`.
   `upload.py all` → `make_fixtures.py`.
 
 ## Layout
-- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,account/link}`.
+- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,distribution,account/link}`.
 - `src/components/` – `Game.tsx` (state and flow), `GuessMap.tsx` (sonar, torpedoes, day
   readout), `map-layout.ts` (scope geometry, label placement), `RoundPanels.tsx` (round bars,
-  reveal, summary), `Menu.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
+  reveal, summary), `DayCurve.tsx` (everyone's totals), `Menu.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
 - `src/lib/game/` – shared: `rules.ts`, `day.ts`, `stats.ts`, `types.ts`, `api-client.ts`.
 - `src/lib/theme.ts` – theme storage key and the pre-paint script (shared by the layout and
   `ThemePicker.tsx`).
 - `src/lib/sound.ts` – sound effects and the mute setting (browser only).
+- `src/lib/viewport.ts` – fits the game above the on-screen keyboard (browser only).
 - `src/lib/api/` – server only: `handler.ts`, `player.ts`, `puzzles.ts`, `rate-limit.ts`.
 - `src/lib/supabase/` – `admin.ts`, `auth.ts`, `browser.ts` (for future accounts),
   `database.types.ts` (generated).
@@ -304,7 +314,8 @@ All responses are JSON; errors are `{ error, ... }`.
 ## Testing
 - Unit: constants and formulas vs the Python fixtures, lean text, New York day boundaries,
   rate limiter, guest cookie signing, sonar positions, map labels not overlapping, ping
-  pitch and echo.
+  pitch and echo, streaks and stats, the day curve and "better than" text, fitting above the
+  keyboard.
 - API (`tests/api`, own q-prefixed fixture words and 1999–2000 dates, cleans up): guest
   cookies, signed-in tokens, every guess error and suggestion, 3-guess and rank-1 endings,
   parallel guesses, future/past puzzles, reveal locking per player, random mode, the round

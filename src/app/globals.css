@@ -12,6 +12,9 @@
   --button-shine:rgb(8 122 64 / .2); --a-shine:transparent; --b-shine:transparent;
   --scan:rgb(14 42 27 / .03); --shadow:rgb(14 42 27 / .3);
   --mono:var(--font-mono),ui-monospace,"SF Mono",Menlo,monospace;
+  /* The game's box: the whole screen, or the part above the on-screen
+     keyboard while it's up (set from JS in src/lib/viewport.ts). */
+  --app-height:100dvh; --app-top:0px;
   color-scheme:light;
   box-sizing:border-box;
 }
@@ -41,7 +44,9 @@ body{margin:0;color:var(--ink);
   font:400 17px/1.5 var(--font-body),system-ui,-apple-system,"Segoe UI",sans-serif;}
 h1,h2,h3{font-family:var(--mono)}
 
-main.game{max-width:520px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;
+/* Pinned to the visible area, so opening the keyboard never scrolls the page. */
+main.game{position:fixed;top:var(--app-top);left:0;right:0;max-width:520px;margin:0 auto;height:var(--app-height);
+  display:flex;flex-direction:column;
   padding:max(10px,env(safe-area-inset-top)) 16px max(12px,env(safe-area-inset-bottom))}
 header.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 h1{font-size:1.55rem;line-height:1;margin:0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
@@ -62,7 +67,7 @@ button.back{margin-left:auto;padding:6px 12px;font-size:.8rem}
 
 /* The scope's panel, with faint scanlines over it. */
 .map{background:var(--sheet);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;
-  flex:0 1 auto;min-height:190px;display:flex;flex-direction:column;
+  flex:0 1 auto;min-height:min(190px,calc(var(--app-height) * .34));display:flex;flex-direction:column;
   box-shadow:inset 0 0 40px var(--shine-soft),0 0 24px var(--shine-soft)}
 .map::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(to bottom,var(--scan) 0 1px,transparent 1px 3px)}
@@ -165,12 +170,16 @@ button:disabled{opacity:.4;cursor:default}
 .summary .of{font-family:var(--mono);color:var(--soft)}
 .summary .streak{font-family:var(--mono);color:var(--glow)}
 .summary p{margin:6px 0}
-.dist{margin:8px 0 0}
-.dist .bars{display:flex;align-items:flex-end;gap:3px;height:44px;border-bottom:1px solid var(--line)}
-.dist .bars span{flex:1;background:var(--line);border-radius:2px 2px 0 0;min-height:2px}
-.dist .bars span.mine{background:var(--glow);box-shadow:0 0 8px var(--shine)}
-.dist .axis{display:flex;justify-content:space-between;font:.65rem var(--mono);color:var(--soft);margin-top:2px}
-.dist figcaption{font-size:.75rem;color:var(--soft);margin-top:2px}
+/* Everyone's totals as a bell curve (DayCurve.tsx). */
+.curve{margin:8px 0 0}
+.curve svg{display:block;width:100%;height:auto;aspect-ratio:340/92;overflow:visible}
+.curve svg text{font:10px var(--mono);letter-spacing:.06em}
+.curve .axis{stroke:var(--line);stroke-width:1.2}
+.curve .score{fill:var(--soft)}
+.curve .you line{stroke:var(--target);stroke-width:2}
+.curve .you circle{fill:var(--target)}
+.curve .you text{fill:var(--target);font-weight:800}
+.curve figcaption{font:700 .75rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--glow);margin-top:2px}
 .summary .row button{padding:10px 14px;font-size:.9rem;letter-spacing:.04em}
 .summary textarea.unseen{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 textarea{width:100%;font:.9rem var(--mono);border-radius:10px;border:1px solid var(--line);
@@ -234,7 +243,7 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
   header.top{margin-bottom:6px}
   .pair{padding-top:8px}
   .pair .w{font-size:1.2rem}
-  .map{min-height:150px}
+  .map{min-height:min(150px,calc(var(--app-height) * .27))}
   form,.start{margin:8px 0 2px}
   input,form button{padding-top:8px;padding-bottom:8px}
   .start button{padding-block:10px}

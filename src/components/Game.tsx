@@ -15,6 +15,7 @@ import { dayNumber } from "@/lib/game/day";
 import {
   bestGuess,
   bestPoints,
+  GRACE_SECONDS,
   GUESSES_PER_ROUND,
   isRoundOver,
   isTooClose,
@@ -27,6 +28,7 @@ import {
 import type { Stats } from "@/lib/game/stats";
 import type { DistributionResponse, PuzzleRound } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
+import { fitToVisualViewport } from "@/lib/viewport";
 
 import { GuessMap, SummaryMap } from "./GuessMap";
 import { bearing, LANDING } from "./map-layout";
@@ -149,6 +151,9 @@ export function Game({ children }: { children: ReactNode }) {
     };
   }, [applyToday]);
 
+  // Fit the game above the on-screen keyboard while it's open.
+  useEffect(() => fitToVisualViewport(), []);
+
   const reloadToday = () => void fetchToday().then(applyToday);
 
   // Focus the input (or the Start button) after a render that showed it (new
@@ -171,17 +176,28 @@ export function Game({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!inSummary) return;
     let active = true;
-    // The summary is complete without either.
-    api
-      .stats()
-      .then((s) => active && setStats(s))
-      .catch(() => {});
-    api
-      .distribution()
-      .then((d) => active && setDistribution(d))
-      .catch(() => {});
+    let retry: number | undefined;
+    // The summary is complete without either. A last round that ran out of
+    // time only counts on the server after its grace period: if today isn't
+    // finished there yet, ask once more after it.
+    const load = (again: boolean) => {
+      api
+        .stats()
+        .then((s) => active && setStats(s))
+        .catch(() => {});
+      api
+        .distribution()
+        .then((d) => {
+          if (!active) return;
+          setDistribution(d);
+          if (d.total === null && again) retry = window.setTimeout(() => load(false), GRACE_SECONDS * 1000 + 500);
+        })
+        .catch(() => {});
+    };
+    load(true);
     return () => {
       active = false;
+      window.clearTimeout(retry);
     };
   }, [inSummary]);
   // The clock: full before the start, hidden once guesses end the round.
@@ -421,7 +437,13 @@ export function Game({ children }: { children: ReactNode }) {
         />
       )}
       {inSummary && daily.status === "ready" && (
-        <DaySummary date={daily.date} rounds={daily.rounds} streak={stats?.currentStreak ?? 0} distribution={distribution} onRandom={() => void startRandom()} />
+        <DaySummary
+          date={daily.date}
+          rounds={daily.rounds}
+          streak={stats?.currentStreak ?? 0}
+          distribution={distribution}
+          onRandom={() => void startRandom()}
+        />
       )}
 
       <p className={message?.error ? "msg err" : "msg"} role="status" aria-live="polite">

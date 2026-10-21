@@ -26,6 +26,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Android Chrome: the keyboard shrinks the layout, so 100dvh stays above it
+  // (iOS ignores this; src/lib/viewport.ts handles it there).
+  interactiveWidget: "resizes-content",
   colorScheme: "light dark",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#E9F1EC" },
