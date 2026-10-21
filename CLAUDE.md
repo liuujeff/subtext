@@ -37,8 +37,14 @@ pipeline that builds all the word data. Answers never reach the browser.
   guess"), and share text: the total, one emoji per
   pair (🎯 90+, 💥 60+, 🌊 30+, 🫧 below) and the site's link (`location.origin`).
 - **Random mode**: unlimited extra pairs from a separate pool, same rules.
-- No account: progress is tied to the browser by a cookie. "How to play" (menu, top left)
-  explains this in plain words and opens on a player's first visit.
+- Accounts are optional: without one, progress is tied to the browser by a cookie; "Sign in with
+  Google" (in the menu drawer) keeps it across devices and moves the browser's progress into the
+  account. "How to play" (menu, top left) opens on a player's first visit.
+- **Streaks and stats** (drawer, and the streak on the day summary): a day counts once all five
+  daily rounds are finished (3 guesses, a rank-1 hit, or the clock ran out) and were started on
+  that puzzle's own New York day, so replaying a past day doesn't extend a streak. The streak
+  survives until the end of the day after the last completed one. Stats: current and best
+  streak, days completed, average and best day, best words found. Guests get them too.
 
 ## How the app works
 
@@ -136,6 +142,10 @@ answers come only after the server confirms the round is over.
   1–3, word, rank, points, lean), `round_starts` (player_id, puzzle_id, started_at; written
   from the API server's clock and compared with it). A started round counts as played:
   `upload.py` never changes or removes it, and `upload.py vocab --force` clears both.
+- `daily_results(player, expire_secs)` → one row per played daily (date, finished rounds, points,
+  rank-1 hits), the source of streaks and stats; `merge_guest(guest, user)` moves a guest's
+  rounds to an account. Server only, like `score_guess`. PostgREST caps a response at 1,000
+  rows, so stats stop seeing days past ~1,000 played.
 - `score_guess(puzzle_id, word)` → rank, lean, objective. `suggest_words(word)` → spelling
   candidates (trigram index, ≤ 2 edits, ≤ 1 for short words, sound-alike bonus via Double
   Metaphone, then most common).
@@ -150,9 +160,11 @@ answers come only after the server confirms the round is over.
 - **Guests** (everyone for now): a `subtext_player` cookie with a random id signed by
   `PLAYER_COOKIE_SECRET` (HttpOnly, SameSite=Lax, Secure in production, 400 days, refreshed
   on each response). Forged ids get a fresh one. New ids: 100 per IP per hour.
-- **Signed-in players** (when accounts exist): `Authorization: Bearer <Supabase token>`; a
-  rejected token is a 401 and the client carries on as a guest. Supabase anonymous sign-ins
-  are off. Upgrading a guest later = moving their `guesses` rows to the user id.
+- **Signed-in players** (Google, via Supabase Auth with PKCE): `Authorization: Bearer <Supabase
+  token>`; a rejected token is a 401 and the client carries on as a guest. Supabase anonymous
+  sign-ins are off. After sign-in `Account.tsx` calls `POST /api/account/link` (token + guest
+  cookie), which runs `merge_guest`: the guest's rounds move to the user id, except puzzles the
+  account already played (the account's rows win); the guest id is retired (new cookie).
 - Rate limits (per server instance, best effort): reads (including `/api/start`) 60/min per
   player and 300/min per IP; guesses 20/min per player and 120/min per IP. The real limit
   is the 3-guess constraint.
@@ -169,6 +181,9 @@ All responses are JSON; errors are `{ error, ... }`.
   `not_started`, `round_over` (also when time is up), `not_found` (missing or future
   puzzle), `conflict`, `bad_request`, `rate_limited`. Past daily puzzles are playable.
 - `GET /api/reveal?puzzleId=` → `{ top: [{ word, points }] }`, else `round_not_over` (403).
+- `GET /api/stats` → `Stats` (`src/lib/game/stats.ts`), for guests and signed-in players alike.
+- `POST /api/account/link` → `{ merged }`; needs a token (`unauthorized` otherwise); a no-op
+  without a guest cookie.
 - `POST /api/random` `{ exclude? }` → a round, preferring unfinished (not over by guesses or
   time).
 
@@ -240,7 +255,9 @@ All responses are JSON; errors are `{ error, ... }`.
   database is live, only add new migrations.
 
 ## Commands
-- `npm run dev` – dev server; needs `.env.local` (see `.env.example`).
+- `npm run dev` – dev server; needs `.env.local` (see `.env.example`). Google sign-in locally
+  also needs OAuth credentials in `supabase/.env` (see `supabase/.env.example`); restart
+  `db:start` after adding them. Everything else works without.
 - `npm run db:start` / `db:stop` / `db:reset` – local Supabase in Docker. A reset wipes data;
   reload with `scripts/.venv/bin/python scripts/upload.py all`.
 - `npm test` – unit; `npm run test:api` – route handlers against the local stack;
@@ -253,11 +270,11 @@ All responses are JSON; errors are `{ error, ... }`.
   `upload.py all` → `make_fixtures.py`.
 
 ## Layout
-- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random}`.
+- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,account/link}`.
 - `src/components/` – `Game.tsx` (state and flow), `GuessMap.tsx` (sonar, torpedoes, day
   readout), `map-layout.ts` (scope geometry, label placement), `RoundPanels.tsx` (round bars,
-  reveal, summary), `HowToPlay.tsx`, `HowScoring.tsx`, `ThemePicker.tsx`, `SoundToggle.tsx`.
-- `src/lib/game/` – shared: `rules.ts`, `day.ts`, `types.ts`, `api-client.ts`.
+  reveal, summary), `HowToPlay.tsx`, `HowScoring.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
+- `src/lib/game/` – shared: `rules.ts`, `day.ts`, `stats.ts`, `types.ts`, `api-client.ts`.
 - `src/lib/theme.ts` – theme storage key and the pre-paint script (shared by the layout and
   `ThemePicker.tsx`).
 - `src/lib/sound.ts` – sound effects and the mute setting (browser only).
@@ -289,4 +306,5 @@ All responses are JSON; errors are `{ error, ... }`.
 - Weak pairs under Numberbatch: forest + mathematics, horse + ocean, harbor + nightmare. Some
   odd answers (kea for volcano + island, chine, arco, coney, gilbert, langley, goldilocks):
   add them to `pool_exclude.txt` and rebuild.
-- Later: accounts, stats and streaks, an archive of past days, difficulty tiers.
+- Later: an archive of past days, difficulty tiers, a stats screen with history, other sign-in
+  providers.
