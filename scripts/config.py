@@ -37,8 +37,26 @@ SEED = 0
 
 # Scoring
 LAM = 1.0
-RANK_CAP = 25_000    # the whole pool: only the very worst pool words score 0
-POINTS_CURVE = 0.6   # < 1 lifts middling ranks (rank 100 = 69, rank 1,000 = 50)
+# Points from rank: straight lines in ln(rank) between these (rank, points) knots, 0 at the
+# last. Fitted so a simulated population's best-of-three scores come out close to a bell
+# (mean ~50) instead of a flat spread: the top is steep (rank 2 = 92), the middle is a long
+# shallow slope where most players land, and the bottom falls away.
+RANK_KNOTS = [
+    (1, 100),
+    (2, 92),
+    (3, 86),
+    (5, 80),
+    (10, 72),
+    (20, 67),
+    (50, 61),
+    (100, 58),
+    (300, 53),
+    (1_000, 46),
+    (3_000, 36),
+    (10_000, 18),
+    (25_000, 0),
+]
+RANK_CAP = RANK_KNOTS[-1][0]  # the whole pool: only the very worst pool words score 0
 EPS = 1e-6           # same tolerance as score_guess()
 GUESSES = 3
 TOP_ANSWERS = 10

@@ -7,7 +7,7 @@ import { AX, BX, CX, CY, HEIGHT, polar, position, WIDTH } from "./map-layout";
 const A = "camel";
 const B = "ship";
 const GUESSES = [
-  { word: "caravan", points: 90, lean: 0.02, side: "right" },
+  { word: "caravan", points: 80, lean: 0.02, side: "right" },
   { word: "sand", points: 55, lean: -0.25, side: "left" },
   { word: "ocean", points: 40, lean: 0.3, side: "right" },
 ] as const;

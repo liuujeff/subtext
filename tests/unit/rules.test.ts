@@ -8,9 +8,8 @@ import {
   isTooCloseToClue,
   leanText,
   pointsForRank,
-  POINTS_CURVE,
   POOL_SIZE,
-  RANK_CAP,
+  RANK_KNOTS,
   ROUNDS_PER_DAY,
   shareSymbol,
 } from "@/lib/game/rules";
@@ -19,7 +18,7 @@ import fixtures from "../fixtures/scoring.json";
 
 describe("matches the Python pipeline (tests/fixtures/scoring.json)", () => {
   it("uses the same constants", () => {
-    expect({ RANK_CAP, POINTS_CURVE, GUESSES: GUESSES_PER_ROUND, ROUNDS_PER_DAY, POOL_SIZE, DAILY_START }).toEqual(
+    expect({ RANK_KNOTS, GUESSES: GUESSES_PER_ROUND, ROUNDS_PER_DAY, POOL_SIZE, DAILY_START }).toEqual(
       fixtures.constants,
     );
   });
@@ -55,7 +54,7 @@ describe("rules", () => {
   });
 
   it("maps scores to share symbols", () => {
-    expect([95, 90, 89, 60, 59, 30, 29, 0].map(shareSymbol)).toEqual(["🎯", "🎯", "💥", "💥", "🌊", "🌊", "🫧", "🫧"]);
+    expect([95, 80, 79, 55, 54, 35, 34, 0].map(shareSymbol)).toEqual(["🎯", "🎯", "💥", "💥", "🌊", "🌊", "🫧", "🫧"]);
   });
 });
 

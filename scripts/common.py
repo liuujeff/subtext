@@ -29,9 +29,19 @@ def forbidden(guess: str, clue: str) -> bool:
 
 
 def points_for_rank(rank: int) -> int:
-    # floor(x + 0.5) rather than round(): Python rounds halves to even, JS rounds them up.
-    x = max(0.0, 1 - math.log(rank) / math.log(config.RANK_CAP))
-    return math.floor(100 * x ** config.POINTS_CURVE + 0.5)
+    # Lines in ln(rank) between config.RANK_KNOTS; same arithmetic as rules.ts.
+    knots = config.RANK_KNOTS
+    if rank <= knots[0][0]:
+        return knots[0][1]
+    if rank >= knots[-1][0]:
+        return knots[-1][1]
+    x = math.log(rank)
+    for (r0, p0), (r1, p1) in zip(knots, knots[1:]):
+        if rank <= r1:
+            x0, x1 = math.log(r0), math.log(r1)
+            # floor(x + 0.5) rather than round(): Python rounds halves to even, JS rounds them up.
+            return math.floor(p0 + (p1 - p0) * (x - x0) / (x1 - x0) + 0.5)
+    raise AssertionError("unreachable")
 
 
 def today_ny():

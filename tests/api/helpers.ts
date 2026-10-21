@@ -76,7 +76,7 @@ export async function seed(): Promise<Seeded> {
     word_b: B,
     lam: 1,
     sorted_scores: [0.9, 0.5, 0.3, 0.1],
-    top_answers: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 96 }],
+    top_answers: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 92 }],
   };
   const rows = [
     ...[0, 1, 2].map((round) => ({ ...common, kind: "daily", play_date: TODAY, round })),

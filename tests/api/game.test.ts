@@ -137,7 +137,7 @@ describe("GET /api/today", () => {
     await guess(p1, ids.today[1], "qwmid");
     const mine = (await today(p1)).body as { rounds: { guesses: unknown[] }[] };
     const theirs = (await today(p2)).body as { rounds: { guesses: unknown[] }[] };
-    expect(mine.rounds[1].guesses).toEqual([{ word: "qwmid", rank: 2, points: 96, lean: expect.any(Number) }]);
+    expect(mine.rounds[1].guesses).toEqual([{ word: "qwmid", rank: 2, points: 92, lean: expect.any(Number) }]);
     expect(theirs.rounds[1].guesses).toEqual([]);
   });
 });
@@ -149,11 +149,11 @@ describe("POST /api/guess", () => {
     const res = await guess(p, ids.today[0], "  QWMID ");
     expect(res.status).toBe(200);
     expect(Object.keys(res.body).sort()).toEqual(["lean", "over", "points", "rank"]);
-    expect(res.body).toMatchObject({ points: 96, rank: 2, over: false });
+    expect(res.body).toMatchObject({ points: 92, rank: 2, over: false });
     expect(Math.abs(res.body.lean as number)).toBeLessThan(1e-3);
 
     const low = await guess(p, ids.today[0], "qvlow");
-    expect(low.body).toMatchObject({ points: 93, rank: 3, over: false });
+    expect(low.body).toMatchObject({ points: 86, rank: 3, over: false });
     expect(low.body.lean as number).toBeGreaterThan(0.6);
   });
 
@@ -187,7 +187,7 @@ describe("POST /api/guess", () => {
     await start(p, id);
     expect((await guess(p, id, "qwmid")).body.over).toBe(false);
     expect((await guess(p, id, "qvlow")).body.over).toBe(false);
-    expect((await guess(p, id, "qtzero")).body).toMatchObject({ rank: 5, points: 90, over: true });
+    expect((await guess(p, id, "qtzero")).body).toMatchObject({ rank: 5, points: 80, over: true });
     expect((await guess(p, id, "qsone")).body).toEqual({ error: "round_over" });
   });
 
@@ -238,7 +238,7 @@ describe("GET /api/reveal", () => {
     expect((await reveal(p, id)).body).toEqual({ error: "round_not_over" });
     await guess(p, id, "qtzero");
     expect((await reveal(p, id)).body).toEqual({
-      top: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 96 }],
+      top: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 92 }],
     });
 
     // Another player's finished round doesn't unlock it for this one.
@@ -330,7 +330,7 @@ describe("the round clock", () => {
     expect((await reveal(p, id)).body).toEqual({ error: "round_not_over" });
     await startedAgo(p, id, 64);
     expect((await reveal(p, id)).body).toEqual({
-      top: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 96 }],
+      top: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 92 }],
     });
   });
 });

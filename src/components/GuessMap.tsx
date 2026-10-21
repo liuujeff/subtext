@@ -44,8 +44,8 @@ function wedge(from: number, to: number) {
   return `M${CX} ${CY} L${p.x} ${p.y} A${R} ${R} 0 0 1 ${q.x} ${q.y} Z`;
 }
 
-// Range rings at the share symbols' thresholds (🎯 90+, 💥 60+, 🌊 30+).
-const RINGS = [90, 60, 30];
+// Range rings at the share symbols' thresholds (🎯 80+, 💥 55+, 🌊 35+).
+const RINGS = [80, 55, 35];
 
 /** Rim with bearing ticks, range rings, spokes every 30°. */
 export function Scope({ fill }: { fill: string }) {

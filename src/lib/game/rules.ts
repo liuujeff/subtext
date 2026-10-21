@@ -4,8 +4,24 @@
 
 export const GUESSES_PER_ROUND = 3;
 export const ROUNDS_PER_DAY = 5;
-export const RANK_CAP = 25_000;
-export const POINTS_CURVE = 0.6;
+// Points from rank: straight lines in ln(rank) between these (rank, points) knots, as in
+// RANK_KNOTS in scripts/config.py (which says why).
+export const RANK_KNOTS: readonly (readonly [number, number])[] = [
+  [1, 100],
+  [2, 92],
+  [3, 86],
+  [5, 80],
+  [10, 72],
+  [20, 67],
+  [50, 61],
+  [100, 58],
+  [300, 53],
+  [1_000, 46],
+  [3_000, 36],
+  [10_000, 18],
+  [25_000, 0],
+];
+export const RANK_CAP = RANK_KNOTS[RANK_KNOTS.length - 1][0];
 export const POOL_SIZE = 25_000;
 
 /** Seconds on each round's clock, counted from when the player presses Start. */
@@ -25,8 +41,20 @@ export function normalizeGuess(raw: string): string {
 }
 
 export function pointsForRank(rank: number): number {
-  const x = Math.max(0, 1 - Math.log(rank) / Math.log(RANK_CAP));
-  return Math.round(100 * x ** POINTS_CURVE);
+  const first = RANK_KNOTS[0];
+  const last = RANK_KNOTS[RANK_KNOTS.length - 1];
+  if (rank <= first[0]) return first[1];
+  if (rank >= last[0]) return last[1];
+  const x = Math.log(rank);
+  for (let i = 1; i < RANK_KNOTS.length; i++) {
+    const [r1, p1] = RANK_KNOTS[i];
+    if (rank <= r1) {
+      const [r0, p0] = RANK_KNOTS[i - 1];
+      const x0 = Math.log(r0);
+      return Math.round(p0 + ((p1 - p0) * (x - x0)) / (Math.log(r1) - x0));
+    }
+  }
+  return last[1];
 }
 
 /** Same word, same first 4 letters, or a substring either way (length >= 4). */
@@ -65,5 +93,5 @@ export function leanText(lean: number, a: string, b: string): string {
 
 export function shareSymbol(points: number): string {
   // Direct hit, hit, splash, miss.
-  return points >= 90 ? "🎯" : points >= 60 ? "💥" : points >= 30 ? "🌊" : "🫧";
+  return points >= 80 ? "🎯" : points >= 55 ? "💥" : points >= 35 ? "🌊" : "🫧";
 }

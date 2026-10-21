@@ -28,7 +28,7 @@ FORBIDDEN_CASES = [
 
 def main():
     vocab = load_vocab()
-    ranks = list(range(1, 21)) + [50, 99, 100, 101, 500, 1000, 3000, 5000, 10000, 12500, 24999, 25000, 25001]
+    ranks = list(range(1, 21)) + [25, 49, 50, 51, 99, 100, 101, 250, 500, 999, 1000, 1001, 2000, 3000, 5000, 7500, 10000, 12500, 24999, 25000, 25001]
     guesses = []
     for row in load_schedule()[:2]:
         pair = score_pair(vocab, row["a"], row["b"])
@@ -40,8 +40,7 @@ def main():
 
     data = {
         "constants": {
-            "RANK_CAP": config.RANK_CAP,
-            "POINTS_CURVE": config.POINTS_CURVE,
+            "RANK_KNOTS": config.RANK_KNOTS,
             "GUESSES": config.GUESSES,
             "ROUNDS_PER_DAY": config.ROUNDS_PER_DAY,
             "POOL_SIZE": config.POOL_SIZE,
