@@ -1,0 +1,12 @@
+# Words that stay guessable but never count as answers (abbreviations and other
+# poor answers). One per line; rebuild with build_vocab.py after editing.
+atm
+awol
+emf
+inst
+ira
+otc
+rbi
+ult
+lynching
+icecream

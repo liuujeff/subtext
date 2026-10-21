@@ -1,0 +1,2 @@
+# Extra words to drop from the vocabulary entirely, on top of the downloaded
+# LDNOOBW list. One per line; rebuild with build_vocab.py after editing.
