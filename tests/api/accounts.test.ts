@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { POST as linkRoute } from "@/app/api/account/link/route";
 import { POST as guessRoute } from "@/app/api/guess/route";
 import { POST as startRoute } from "@/app/api/start/route";
+import { GET as distributionRoute } from "@/app/api/distribution/route";
 import { GET as statsRoute } from "@/app/api/stats/route";
 import { readGuestId } from "@/lib/api/player";
 
@@ -30,10 +31,12 @@ async function call(route: (req: Request) => Promise<Response>, path: string, p:
 }
 
 const stats = (p: Player) => call(statsRoute, "/api/stats", p);
+const distribution = (p: Player) => call(distributionRoute, "/api/distribution", p);
 const link = (p: Player) => call(linkRoute, "/api/account/link", p, {});
 
 let ids: Seeded;
 // Five rounds on each of these days.
+const TODAY = "2000-01-01";
 const DAYS = ["1999-12-27", "1999-12-28", "1999-12-29", "1999-12-30", "1999-12-31"];
 const dayIds: Record<string, number[]> = {};
 
@@ -56,6 +59,14 @@ beforeAll(async () => {
   );
   const { data, error } = await admin().from("puzzles").insert(rows).select("id, play_date, round").order("id");
   if (error) throw error;
+  // seed() makes three rounds for today; a full day has five.
+  const more = await admin()
+    .from("puzzles")
+    .insert([3, 4].map((round) => ({ ...rows[0], play_date: TODAY, round })))
+    .select("id")
+    .order("id");
+  if (more.error) throw more.error;
+  dayIds[TODAY] = [...ids.today, ...more.data.map((p) => p.id)];
   for (const d of DAYS) {
     const mine = data.filter((p) => p.play_date === d).map((p) => p.id);
     dayIds[d] = d === "1999-12-31" ? [ids.past, ...mine] : mine;
@@ -185,5 +196,29 @@ describe("POST /api/account/link", () => {
     expect((await link({ cookie: guest.cookie, token: first.token })).body).toEqual({ merged: true });
     const second = await signedInPlayer();
     expect((await link({ cookie: old, token: second.token })).body).toEqual({ merged: false });
+  });
+});
+
+describe("GET /api/distribution", () => {
+  it("counts finished days in 50-point buckets and finds the player's total", async () => {
+    const strong = await signedInPlayer();
+    const weak = await signedInPlayer();
+    const open = await signedInPlayer();
+    await play(strong.id, TODAY, [0, 1, 2, 3, 4], 80); // 400
+    await play(weak.id, TODAY, [0, 1, 2, 3, 4], 40); // 200
+    await play(open.id, TODAY, [0, 1], 90); // two rounds only: not counted
+
+    const res = await distribution({ token: strong.token });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ date: TODAY, players: 2, total: 400 });
+    const buckets = res.body.buckets as number[];
+    expect(buckets).toHaveLength(10);
+    expect(buckets[8]).toBe(1);
+    expect(buckets[4]).toBe(1);
+    expect(buckets.reduce((a, b) => a + b, 0)).toBe(2);
+
+    // Someone who hasn't finished sees the spread but no total of their own.
+    expect((await distribution({ token: open.token })).body).toMatchObject({ players: 2, total: null });
+    expect((await distribution({})).body).toMatchObject({ players: 2, total: null });
   });
 });

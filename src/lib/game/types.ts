@@ -32,6 +32,9 @@ export type RandomResponse = PuzzleRound;
 
 export type StatsResponse = Stats;
 
+/** Everyone's totals for today, in buckets of 50 points; `total` is the player's own once they've finished the day. */
+export type DistributionResponse = { date: string; buckets: number[]; players: number; total: number | null };
+
 export type LinkResponse = { merged: boolean };
 
 export type ApiErrorCode =

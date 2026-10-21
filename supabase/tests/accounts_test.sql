@@ -1,6 +1,6 @@
 -- daily_results and merge_guest (fixtures in 1990, made-up ids).
 begin;
-select plan(8);
+select plan(10);
 
 insert into public.words (id, word, freq_rank, in_pool, hub, embedding) values
   (9100001, 'qqcamel', 9100001, true, 0.1, extensions.l2_normalize((array[1, 0] || array_fill(0::real, array[298]))::extensions.halfvec(300))),
@@ -37,6 +37,14 @@ select results_eq(
 select is((select finished from public.daily_results('00000000-0000-0000-0000-00000000000a', 2000000000) where play_date = '1990-01-02'), 0, 'an open round is unfinished');
 select is((select finished from public.daily_results('00000000-0000-0000-0000-00000000000a', -1) where play_date = '1990-01-02'), 1, 'it finishes once its clock runs out');
 select is((select count(*) from public.daily_results('00000000-0000-0000-0000-0000000000ff', 2000000000)), 0::bigint, 'a stranger has no results');
+
+-- day_distribution: only player ...0a played day 1 so far, finished with 70 points (bucket 1).
+select results_eq(
+  $$select bucket, players from public.day_distribution('1990-01-01', 2000000000, 1)$$,
+  $$values (1, 1)$$,
+  'a finished day lands in its 50-point bucket'
+);
+select is((select count(*) from public.day_distribution('1990-01-01', 2000000000, 2)), 0::bigint, 'a day with fewer finished rounds than required is left out');
 
 -- merge_guest: guest ...0b played days 1 and 2; user ...0c already played day 1.
 insert into public.round_starts (player_id, puzzle_id, started_at)

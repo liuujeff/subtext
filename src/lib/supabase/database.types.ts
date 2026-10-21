@@ -116,6 +116,11 @@ isOneToOne: false
               "finished": number,"hits": number,"play_date": string,"points": number
             }[]
                            },
+"day_distribution":
+{ Args: { "p_date": string,"p_expire_secs": number,"p_rounds": number }; Returns: {
+              "bucket": number,"players": number
+            }[]
+                           },
 "merge_guest":
 { Args: { "p_guest": string,"p_user": string }; Returns: number
                            },

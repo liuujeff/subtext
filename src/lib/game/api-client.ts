@@ -3,6 +3,7 @@ import { getSessionToken, resetSession } from "@/lib/supabase/browser";
 import type {
   ApiErrorBody,
   ApiErrorCode,
+  DistributionResponse,
   GuessResponse,
   LinkResponse,
   RandomResponse,
@@ -58,5 +59,6 @@ export const api = {
   reveal: (puzzleId: number) => call<RevealResponse>(`/api/reveal?puzzleId=${puzzleId}`),
   random: (exclude?: number) => call<RandomResponse>("/api/random", { exclude }),
   stats: () => call<StatsResponse>("/api/stats"),
+  distribution: () => call<DistributionResponse>("/api/distribution"),
   link: () => call<LinkResponse>("/api/account/link", {}),
 };
