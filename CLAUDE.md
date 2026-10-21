@@ -27,12 +27,12 @@ pipeline that builds all the word data. Answers never reach the browser.
     in a clue (4+ letters);
   - a plural or other inflected form ("Try the singular: camel");
   - a repeat.
-- **The map** (a sonar scope): the crosshair in the middle is the best word, named only
-  after the round ends; the clues are contacts on the rim, left and right. Each guess is a
+- **The map** (a sonar scope): the crosshair in the middle is the best word, never
+  named; the clues are contacts on the rim, left and right. Each guess is a
   blip labelled with its word and points (no separate list): closer to the middle is more
   points, and swinging toward a side means it leans toward that clue. A torpedo rack in the
   top-left corner shows the guesses left; the button is "Fire".
-- **After a round**: your score, and the best word named at the crosshair. **After the day**: the total,
+- **After a round**: your score. **After the day**: the total,
   a stalk per pair (labelled with both words, the best guess and its score above, or "no
   guess"), and share text: the total, one emoji per
   pair (🎯 90+, 💥 60+, 🌊 30+, 🫧 below) and the site's link (`location.origin`).
@@ -45,7 +45,7 @@ pipeline that builds all the word data. Answers never reach the browser.
   daily rounds are finished (3 guesses, a rank-1 hit, or the clock ran out) and were started on
   that puzzle's own New York day, so replaying a past day doesn't extend a streak. The streak
   survives until the end of the day after the last completed one. Stats: current and best
-  streak, days completed, average and best day, best words found. Guests get them too.
+  streak, days completed, average and best day. Guests get them too.
 
 ## How the app works
 
@@ -81,9 +81,9 @@ answers come only after the server confirms the round is over.
 5. The guess is stored with `guess_no = previous + 1` *before* the score is returned; a
    unique constraint on `(player, puzzle, guess_no)` with `guess_no ≤ 3` makes the limit
    hold under parallel requests. The response is `{ points, rank, lean, over }`.
-6. When the round is over the client calls `GET /api/reveal` to name the best word. After a
-   time-out the server unlocks the reveal only once the grace period has passed too (so no
-   one reads the answers and then sneaks in a guess); the client waits for it and retries.
+6. The best word is never shown: the client doesn't call `GET /api/reveal` any more (the route
+   stays, locked until the round is over, and after a time-out until the grace period has
+   passed too, for whenever answers come back).
 
 ### Scoring (identical in Python, Postgres and TypeScript)
 - Vectors are unit-normalized, so cosine = inner product.

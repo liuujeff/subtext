@@ -15,7 +15,6 @@ import { dayNumber } from "@/lib/game/day";
 import {
   bestGuess,
   bestPoints,
-  GRACE_SECONDS,
   GUESSES_PER_ROUND,
   isRoundOver,
   isTooClose,
@@ -26,7 +25,7 @@ import {
   WORD_PATTERN,
 } from "@/lib/game/rules";
 import type { Stats } from "@/lib/game/stats";
-import type { PuzzleRound, TopAnswer } from "@/lib/game/types";
+import type { PuzzleRound } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
 
 import { GuessMap, SummaryMap } from "./GuessMap";
@@ -37,16 +36,13 @@ import { SoundToggle } from "./SoundToggle";
 
 // `deadline`: when the round's clock runs out, on this page's performance.now()
 // clock (immune to the device's time being off); null until the round starts.
-type Round = PuzzleRound & { top: TopAnswer[] | null; deadline: number | null };
+type Round = PuzzleRound & { deadline: number | null };
 
 function withDeadline(r: PuzzleRound, now: number): Round {
-  return { ...r, top: null, deadline: r.msLeft === null ? null : now + r.msLeft };
+  return { ...r, deadline: r.msLeft === null ? null : now + r.msLeft };
 }
 
 const timeUp = (r: Round, now: number) => r.deadline !== null && now >= r.deadline;
-
-// The server reveals a timed-out round only after its grace period.
-const REVEAL_AFTER_MS = GRACE_SECONDS * 1000 + 300;
 
 // The latest guess fired: `hit` once the server has scored it, when the map
 // runs its torpedo out to the blip.
@@ -132,35 +128,6 @@ export function Game({ children }: { children: ReactNode }) {
     setView((v) => (v.mode === "random" && v.round.puzzleId === puzzleId ? { ...v, round: change(v.round) } : v));
   }, []);
 
-  const reveal = useCallback(
-    (puzzleId: number, delayMs = 0) => {
-      const attempt = async (retries: number) => {
-        try {
-          const { top } = await api.reveal(puzzleId);
-          updateRound(puzzleId, (r) => ({ ...r, top }));
-        } catch (error) {
-          // Out of time here but not yet past the server's grace period.
-          if (error instanceof ApiError && error.code === "round_not_over" && retries > 0) {
-            window.setTimeout(() => void attempt(retries - 1), 1500);
-          }
-          // Otherwise the panel still shows the score; reloading retries the reveal.
-        }
-      };
-      window.setTimeout(() => void attempt(3), delayMs);
-    },
-    [updateRound],
-  );
-
-  // Reveals a round's answers once it's over: now if its guesses ended it,
-  // otherwise when its clock runs out.
-  const revealWhenOver = useCallback(
-    (r: Round, now: number) => {
-      if (isRoundOver(r.guesses)) reveal(r.puzzleId);
-      else if (r.deadline !== null) reveal(r.puzzleId, Math.max(0, r.deadline + REVEAL_AFTER_MS - now));
-    },
-    [reveal],
-  );
-
   const applyToday = useCallback(
     (result: Daily) => {
       setDaily(result);
@@ -168,9 +135,8 @@ export function Game({ children }: { children: ReactNode }) {
       const now = performance.now();
       setNow(now);
       setView({ mode: "daily", round: firstOpenRound(result.rounds, now) });
-      for (const r of result.rounds) revealWhenOver(r, now);
     },
-    [revealWhenOver],
+    [],
   );
 
   useEffect(() => {
@@ -237,7 +203,6 @@ export function Game({ children }: { children: ReactNode }) {
       const t = performance.now();
       setNow(t);
       updateRound(target.puzzleId, (r) => ({ ...r, a, b, deadline: t + msLeft }));
-      reveal(target.puzzleId, Math.max(0, msLeft + REVEAL_AFTER_MS));
       wantFocus.current = true;
     } catch {
       setMessage({ text: "Couldn’t start the round. Try again.", error: true });
@@ -257,7 +222,6 @@ export function Game({ children }: { children: ReactNode }) {
       setView((v) => ({ mode: "random", round: next, back: v.mode === "daily" ? v.round : v.back }));
       setShot(null);
       setInput("");
-      revealWhenOver(next, t);
       wantFocus.current = true;
       if (autoStart && next.a === null) {
         setPending(false);
@@ -332,8 +296,7 @@ export function Game({ children }: { children: ReactNode }) {
       if (rank === 1) sfx.lock(landing);
       else sfx.ping(points, bearing(lean), landing);
       setInput("");
-      if (done) void reveal(round.puzzleId);
-      else wantFocus.current = true;
+      if (!done) wantFocus.current = true;
     } catch (error) {
       setShot(null);
       misfire();
@@ -366,8 +329,6 @@ export function Game({ children }: { children: ReactNode }) {
   const roundCount = daily.status === "ready" ? daily.rounds.length : ROUNDS_PER_DAY;
   const isLastDaily = view.mode === "daily" && daily.status === "ready" && view.round === daily.rounds.length - 1;
 
-  // The target's name, after the reveal; a rank-1 guess already labels it.
-  const target = over && round?.top?.length && !round.guesses.some((g) => g.rank === 1) ? round.top[0].word : null;
   const thisShot = shot && round && shot.puzzleId === round.puzzleId ? shot : null;
   // The countdown is visual; screen readers hear it at 30 and 10 seconds.
   const timeWarning =
@@ -412,7 +373,6 @@ export function Game({ children }: { children: ReactNode }) {
             guesses={round?.guesses ?? []}
             a={round?.a ?? ""}
             b={round?.b ?? ""}
-            target={target}
             firing={thisShot?.hit ? thisShot.word : null}
             arming={!!thisShot && !thisShot.hit}
             secondsLeft={secondsLeft}

@@ -18,7 +18,6 @@ import {
   R,
   radius,
   TARGET_BOX,
-  targetLabelBox,
   TUBES_BOX,
   WIDTH,
 } from "./map-layout";
@@ -125,10 +124,10 @@ function Run({ from, to, glow }: { from: Point; to: Point; glow: string }) {
 }
 
 /**
- * The crosshair on the target; filled in once the target word is named. When
- * a guess hits it (`locked`), it flashes and rings ripple out from it.
+ * The crosshair on the target, which is never named. When a guess hits it
+ * (`locked`), it flashes and rings ripple out from it.
  */
-function Target({ named, locked }: { named: boolean; locked: boolean }) {
+function Target({ locked }: { locked: boolean }) {
   return (
     <>
       {locked && (
@@ -145,7 +144,6 @@ function Target({ named, locked }: { named: boolean; locked: boolean }) {
           const q = polar(15, a);
           return <line key={a} x1={p.x} y1={p.y} x2={q.x} y2={q.y} />;
         })}
-        {named && <circle cx={CX} cy={CY} r={3} fill="var(--target)" stroke="none" />}
       </g>
     </>
   );
@@ -166,19 +164,17 @@ function Clock({ seconds }: { seconds: number }) {
   );
 }
 
-function describe(guesses: Guess[], a: string, b: string, left: number, target: string | null) {
+function describe(guesses: Guess[], a: string, b: string, left: number) {
   if (!a) return "Sonar. The pair appears when you press Start.";
   const parts = guesses.map((g) => `${g.word}, ${g.points} points, ${leanText(g.lean, a, b).toLowerCase()}.`);
   const torpedoes = `${left} of ${GUESSES_PER_ROUND} torpedoes left.`;
-  return [`Sonar of guesses between ${a} and ${b}.`, ...parts, torpedoes, target ? `The target is ${target}.` : ""]
-    .join(" ")
-    .trim();
+  return [`Sonar of guesses between ${a} and ${b}.`, ...parts, torpedoes].join(" ");
 }
 
 /**
  * The sonar for one round: each guess is a blip with its word and points, the
- * torpedoes in the corner are the guesses left, and `target` (the best word)
- * is named only after the reveal. `firing` is the guess just scored: its
+ * torpedoes in the corner are the guesses left. The best word at the crosshair
+ * is never named. `firing` is the guess just scored: its
  * torpedo runs out to it and it lands at --land, LANDING seconds later (set
  * by the page; a rank-1 guess locks onto the target). `arming` is while the
  * server scores a guess.
@@ -188,19 +184,18 @@ export function GuessMap(props: {
   guesses: Guess[];
   a: string;
   b: string;
-  target: string | null;
   firing?: string | null;
   arming?: boolean;
   secondsLeft?: number | null;
 }) {
-  const { guesses, target, firing = null } = props;
+  const { guesses, firing = null } = props;
   const id = useId();
   const last = guesses.length - 1;
   const left = GUESSES_PER_ROUND - guesses.length;
   // The best guess is lit; the others dim once there are two or more.
   const best = bestPoints(guesses);
   const spots = guesses.map((g) => ({ ...position(g), width: labelWidth(g.word, g.points) }));
-  const labels = placeLabels(spots, [TUBES_BOX, CLOCK_BOX, TARGET_BOX, ...(target ? [targetLabelBox(target)] : [])]);
+  const labels = placeLabels(spots, [TUBES_BOX, CLOCK_BOX, TARGET_BOX]);
   const shot = guesses.findIndex((g) => g.word === firing);
   const locked = shot !== -1 && guesses[shot].rank === 1;
   const incoming = (i: number, name: string) => (i === shot ? `${name} incoming` : name);
@@ -209,7 +204,7 @@ export function GuessMap(props: {
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
-      aria-label={describe(guesses, props.a, props.b, left, target)}
+      aria-label={describe(guesses, props.a, props.b, left)}
     >
       <defs>
         <Glow id={`${id}glow`} />
@@ -237,12 +232,7 @@ export function GuessMap(props: {
           </g>
         );
       })}
-      <Target named={!!target} locked={locked} />
-      {target && (
-        <text x={CX} y={CY + 28} textAnchor="middle" fontSize={13} fontWeight={800} fill="var(--target)" {...HALO}>
-          {target}
-        </text>
-      )}
+      <Target locked={locked} />
       {/* The contacts; on a lock they jolt toward the target. */}
       {([[AX, "var(--a)", "contact"], [BX, "var(--b)", "contact contact-b"]] as const).map(([x, color, name]) => (
         <g key={x} className={locked ? `${name} pulled` : name}>
