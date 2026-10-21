@@ -180,9 +180,15 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 .menu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .menu h2{font-size:1.3rem;margin:0;color:var(--glow)}
 .menu p{color:var(--soft);margin:.5em 0}
-.rules{margin:0;padding-left:1.1em;color:var(--soft)}
-.rules li{margin:.45em 0}
-.rules strong{color:var(--ink)}
+/* The "How to play" picture. */
+.how{margin:0}
+.how svg{display:block;width:100%;height:auto;aspect-ratio:340/250;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.how svg text{font-family:var(--mono)}
+.facts{display:flex;gap:6px;list-style:none;margin:10px 0 0;padding:0}
+.facts li{flex:1;text-align:center;border:1px solid var(--line);border-radius:8px;padding:6px 4px;color:var(--soft);font-size:.8rem;line-height:1.25}
+.facts strong{display:block;font:800 1.3rem var(--mono);color:var(--glow)}
+.how figcaption{margin-top:10px;color:var(--soft)}
+.how em{color:var(--ink);font-style:normal;font-weight:700}
 .menu .lede{margin:0 0 12px;color:var(--ink)}
 .menu .row{margin-top:16px}
 .menu .close{width:40px;height:40px;padding:0;font-size:1.5rem;line-height:1;border:0;margin-right:-8px}

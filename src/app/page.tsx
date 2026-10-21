@@ -1,10 +1,10 @@
 import { Game } from "@/components/Game";
-import { HowScoring } from "@/components/HowScoring";
+import { HowDiagram } from "@/components/HowDiagram";
 
 export default function Home() {
   return (
     <Game>
-      <HowScoring />
+      <HowDiagram />
     </Game>
   );
 }

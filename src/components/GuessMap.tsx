@@ -24,7 +24,7 @@ import {
 } from "./map-layout";
 
 // A light outline in the panel colour keeps labels readable over lines and rings.
-const HALO = { stroke: "var(--sheet)", strokeWidth: 4, strokeLinejoin: "round", paintOrder: "stroke" } as const;
+export const HALO = { stroke: "var(--sheet)", strokeWidth: 4, strokeLinejoin: "round", paintOrder: "stroke" } as const;
 
 function Glow({ id }: { id: string }) {
   return (
@@ -49,7 +49,7 @@ function wedge(from: number, to: number) {
 const RINGS = [90, 60, 30];
 
 /** Rim with bearing ticks, range rings, spokes every 30°. */
-function Scope({ fill }: { fill: string }) {
+export function Scope({ fill }: { fill: string }) {
   return (
     <g>
       <circle cx={CX} cy={CY} r={R} fill={`url(#${fill})`} />

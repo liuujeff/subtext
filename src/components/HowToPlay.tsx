@@ -75,9 +75,7 @@ export function HowToPlay({
               ×
             </button>
           </div>
-          <p className="lede">
-            Find one word that sits between two others in meaning. Five pairs a day, three guesses each.
-          </p>
+          <p className="lede">Find one word that sits between two others in meaning.</p>
           {children}
           <div className="row">
             <button type="button" onClick={close}>

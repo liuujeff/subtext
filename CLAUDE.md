@@ -228,7 +228,7 @@ All responses are JSON; errors are `{ error, ... }`.
   torpedo rack (`CLOCK_BOX` keeps labels off it): 1:00 before the start, red under 10 s,
   hidden once guesses end the round. Before the start a wide Start button takes the guess
   form's place and the pair shows "?"; screen readers hear "30 / 10 seconds left".
-- "How to play" is a drawer (`HowToPlay.tsx`, rules text in `HowScoring.tsx`). Random mode
+- "How to play" is a drawer (`HowToPlay.tsx`, a picture of the scope in `HowDiagram.tsx`, no step list). Random mode
   puts "Back to today" in the header.
 
 ## Rules for working on this repo
@@ -274,7 +274,7 @@ All responses are JSON; errors are `{ error, ... }`.
 - `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,account/link}`.
 - `src/components/` – `Game.tsx` (state and flow), `GuessMap.tsx` (sonar, torpedoes, day
   readout), `map-layout.ts` (scope geometry, label placement), `RoundPanels.tsx` (round bars,
-  reveal, summary), `HowToPlay.tsx`, `HowScoring.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
+  reveal, summary), `HowToPlay.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
 - `src/lib/game/` – shared: `rules.ts`, `day.ts`, `stats.ts`, `types.ts`, `api-client.ts`.
 - `src/lib/theme.ts` – theme storage key and the pre-paint script (shared by the layout and
   `ThemePicker.tsx`).
