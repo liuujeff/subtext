@@ -108,11 +108,9 @@ export function Account({
       {stats ? (
         <dl className="stats">
           <Stat label="Current streak" value={stats.currentStreak} />
-          <Stat label="Best streak" value={stats.bestStreak} />
           <Stat label="Days completed" value={stats.daysCompleted} />
           <Stat label="Average day" value={stats.averageScore} />
           <Stat label="Best day" value={stats.bestScore} />
-          <Stat label="Best words found" value={stats.bestWordHits} />
         </dl>
       ) : (
         <p>{failed ? "Couldn’t load your stats." : "Loading…"}</p>

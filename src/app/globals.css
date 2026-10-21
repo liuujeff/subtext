@@ -215,7 +215,7 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 /* Account and stats, in the drawer. */
 .account{margin:22px 0 0}
 .account h3{margin:0 0 8px;font-size:.9rem;font-weight:400;color:var(--soft)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0}
 .stats div{border:1px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center}
 .stats dt{font-size:.7rem;color:var(--soft);line-height:1.2;min-height:2.4em}
 .stats dd{margin:2px 0 0;font:800 1.4rem var(--mono);color:var(--glow)}
