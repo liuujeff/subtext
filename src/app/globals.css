@@ -39,8 +39,10 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:inherit}
-/* No rubber-banding: the game is pinned, there is nothing to scroll. */
-html,body{overscroll-behavior:none}
+/* The page itself never scrolls: the game is pinned (main.game below), and
+   iOS would otherwise let the document scroll by the keyboard's height. */
+html,body{overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0}
 body{margin:0;color:var(--ink);
   background:radial-gradient(120% 60% at 50% 0%,var(--wash) 0%,transparent 70%) no-repeat var(--paper);
   font:400 17px/1.5 var(--font-body),system-ui,-apple-system,"Segoe UI",sans-serif;}
