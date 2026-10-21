@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meetle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EBEFE3; --sheet:#F6F8F1; --ink:#1D2B3A; --soft:#56657A; --contour:#C3CFB8;
+  --a:#2F5D8A; --b:#9A6A12; --peak:#B8326E; --peak-soft:#F3D9E4; --line:#D6DECD;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131A1F; --sheet:#1A232A; --ink:#E4E9DE; --soft:#9DAAB3; --contour:#2C3B37;
+    --a:#86AEDA; --b:#D9AA52; --peak:#EA78A8; --peak-soft:#3A2230; --line:#2A3640;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131A1F; --sheet:#1A232A; --ink:#E4E9DE; --soft:#9DAAB3; --contour:#2C3B37;
+  --a:#86AEDA; --b:#D9AA52; --peak:#EA78A8; --peak-soft:#3A2230; --line:#2A3640;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:400 17px/1.5 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;}
+main{max-width:520px;margin:0 auto;padding:20px 18px 48px}
+h1,h2,.display{font-family:"Bricolage Grotesque","Atkinson Hyperlegible",system-ui,sans-serif}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+h1{font-size:2.4rem;line-height:1;margin:0;font-weight:800;letter-spacing:-.03em}
+.day{color:var(--soft);font-size:.95rem;white-space:nowrap}
+.lede{margin:6px 0 18px;color:var(--soft);max-width:34em}
+.rounds{display:flex;gap:6px;margin:0 0 10px}
+.rounds span{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.rounds span.done{background:var(--soft)}
+.rounds span.now{background:var(--peak)}
+.map{background:var(--sheet);border-radius:14px;overflow:hidden;position:relative}
+.map svg{display:block;width:100%;height:auto}
+.pair{display:flex;justify-content:space-between;align-items:flex-end;padding:14px 16px 0;gap:10px}
+.pair .w{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.65rem;line-height:1.05;letter-spacing:-.02em}
+.pair .wa{color:var(--a)} .pair .wb{color:var(--b);text-align:right}
+.pair .and{color:var(--soft);font-size:.9rem;padding-bottom:4px}
+form{display:flex;gap:8px;margin:16px 0 6px}
+input{flex:1;min-width:0;font:inherit;font-size:1.1rem;padding:12px 14px;border-radius:10px;
+  border:2px solid var(--line);background:var(--sheet);color:var(--ink)}
+input:focus{outline:none;border-color:var(--peak)}
+button{font:700 1rem "Atkinson Hyperlegible",system-ui,sans-serif;padding:12px 18px;border-radius:10px;border:0;
+  background:var(--ink);color:var(--paper);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--peak);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+.msg{min-height:1.5em;font-size:.95rem;color:var(--soft);margin:0 0 6px}
+.msg.err{color:var(--peak)}
+ol.guesses{list-style:none;margin:6px 0 0;padding:0}
+ol.guesses li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.gw{font-weight:700;font-size:1.1rem}
+.gp{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.3rem;text-align:right}
+.gl{grid-column:1/-1;font-size:.9rem;color:var(--soft)}
+.best .gp{color:var(--peak)}
+.reveal{margin-top:18px;padding:16px;border-radius:14px;background:var(--peak-soft)}
+.reveal h2{margin:0 0 6px;font-size:1.15rem}
+.reveal p{margin:0 0 10px}
+.tops{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 14px;padding:0;list-style:none}
+.tops li{font-weight:700}
+.tops li span{font-weight:400;color:var(--soft);margin-left:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.summary{margin-top:18px}
+.summary .total{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:3rem;line-height:1;letter-spacing:-.03em}
+.summary .of{color:var(--soft)}
+textarea{width:100%;font:inherit;font-size:.95rem;border-radius:10px;border:2px solid var(--line);
+  background:var(--sheet);color:var(--ink);padding:10px;margin:10px 0;resize:none}
+details{margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--soft);margin:.6em 0}
+.dot{transition:transform .35s ease}
+@media (prefers-reduced-motion:reduce){.dot{transition:none}}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Meetle</h1>
+    <span class="day" id="day"></span>
+  </header>
+  <p class="lede">Find one word that sits between two others in meaning. Three pairs a day, three guesses each.</p>
+
+  <div class="rounds" id="rounds" aria-hidden="true"></div>
+
+  <section class="map" aria-label="Map of your guesses">
+    <div class="pair">
+      <span class="w wa" id="wa"></span>
+      <span class="and">and</span>
+      <span class="w wb" id="wb"></span>
+    </div>
+    <svg id="svg" viewBox="0 0 340 250" role="img" aria-label="Guesses plotted between the two words"></svg>
+  </section>
+
+  <form id="form" autocomplete="off">
+    <input id="inp" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false"
+      placeholder="Type a word" aria-label="Your guess" maxlength="20">
+    <button id="go" type="submit">Guess</button>
+  </form>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+  <ol class="guesses" id="guesses"></ol>
+
+  <div id="reveal" class="reveal hidden"></div>
+  <div id="summary" class="summary hidden"></div>
+
+  <details>
+    <summary>How scoring works</summary>
+    <p>Every word in the list has 100 numbers describing how it’s used, learned from a large body of text. Two words with similar numbers mean similar things.</p>
+    <p>A guess is measured against both words, and only the weaker of the two counts, so a word that’s great for one side and useless for the other scores low. Very general words like “area” or “thing” get a small penalty, since they’re loosely close to everything.</p>
+    <p>Your guess is then ranked against 12,000 common words. The top word scores 100; the top 10 score about 70 or more. Your best guess in each pair counts.</p>
+    <p>On the map, the peak is the best possible word. Higher is better, and a dot that drifts left or right leans toward that word.</p>
+  </details>
+</main>
+
+<script>/*DATA*/</script>
+<script>
+(function(){
+"use strict";
+const D=window.MP_DATA;
+const W=D.w.split(" "), N=D.n, DIM=D.d, NW=W.length;
+const idx=new Map(W.map((w,i)=>[w,i]));
+function b64(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;}
+const Q=new Int8Array(b64(D.q)), SC=new Float32Array(b64(D.s)), HUB=new Float32Array(b64(D.h));
+const V=new Float32Array(NW*DIM);
+for(let i=0;i<NW;i++){let n=0;const o=i*DIM;for(let d=0;d<DIM;d++){const x=Q[o+d]*SC[d]/127;V[o+d]=x;n+=x*x;}n=Math.sqrt(n);for(let d=0;d<DIM;d++)V[o+d]/=n;}
+function dot(i,j){let s=0;const a=i*DIM,b=j*DIM;for(let d=0;d<DIM;d++)s+=V[a+d]*V[b+d];return s;}
+const LAM=1.0, GUESSES=3, PER_DAY=3, RANK_CAP=3000;
+
+function forbidden(g,clue){
+  if(g===clue) return true;
+  if(g.length>=4&&clue.length>=4&&g.slice(0,4)===clue.slice(0,4)) return true;
+  if(clue.length>=4&&g.includes(clue)) return true;
+  if(g.length>=4&&clue.includes(g)) return true;
+  return false;
+}
+
+function buildPair(a,b){
+  const ia=idx.get(a), ib=idx.get(b);
+  const objs=[];
+  for(let j=0;j<N;j++){
+    const w=W[j]; if(forbidden(w,a)||forbidden(w,b)) continue;
+    const sa=dot(j,ia), sb=dot(j,ib);
+    objs.push({j,o:Math.min(sa,sb)-LAM*HUB[j]});
+  }
+  objs.sort((x,y)=>y.o-x.o);
+  return {a,b,ia,ib,sorted:objs.map(x=>x.o),top:objs.slice(0,6).map(x=>W[x.j])};
+}
+function scoreGuess(P,g){
+  const j=idx.get(g); const sa=dot(j,P.ia), sb=dot(j,P.ib);
+  const o=Math.min(sa,sb)-LAM*HUB[j];
+  // rank = 1 + number of pool words strictly better
+  let lo=0,hi=P.sorted.length; while(lo<hi){const m=(lo+hi)>>1; if(P.sorted[m]>o+1e-9) lo=m+1; else hi=m;}
+  const rank=lo+1;
+  const pts=Math.max(0,Math.round(100*(1-Math.log(rank)/Math.log(RANK_CAP))));
+  return {w:g,sa,sb,rank,pts};
+}
+function pointsForRank(r){return Math.max(0,Math.round(100*(1-Math.log(r)/Math.log(RANK_CAP))));}
+
+// ----- day + storage
+const EPOCH=Date.UTC(2026,9,21);
+function todayNum(){const n=new Date();const t=Date.UTC(n.getFullYear(),n.getMonth(),n.getDate());return Math.floor((t-EPOCH)/864e5)+1;}
+const DAY=Math.max(1,todayNum());
+function dailyPairs(day){const out=[];for(let k=0;k<PER_DAY;k++){out.push(D.p[((day-1)*PER_DAY+k)%D.p.length]);}return out;}
+function load(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+const KEY="meetle-day-"+DAY;
+
+let state={mode:"daily",pairs:dailyPairs(DAY),round:0,guesses:[[],[],[]]};
+const saved=load(KEY);
+if(saved&&saved.guesses&&saved.guesses.length===PER_DAY){state.guesses=saved.guesses;state.round=Math.min(saved.round||0,PER_DAY);}
+let P=null;
+
+const $=id=>document.getElementById(id);
+const svg=$("svg"), inp=$("inp"), msg=$("msg");
+const NS="http://www.w3.org/2000/svg";
+function el(t,attrs,parent){const e=document.createElementNS(NS,t);for(const k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e;}
+
+const AX=26, BX=314, BASE=226, PX=170, PY=34;
+function pos(g){
+  const lean=Math.max(-1,Math.min(1,(g.sb-g.sa)*2.2));
+  const h=g.pts/100;
+  const y=BASE-h*(BASE-PY);
+  const spread=(1-h*0.55)*128;
+  return {x:PX+lean*spread,y};
+}
+function leanText(g){
+  const d=g.sb-g.sa;
+  if(Math.abs(d)<0.06) return "Balanced between "+P.a+" and "+P.b;
+  const side=d>0?P.b:P.a;
+  return (Math.abs(d)>0.2?"Pulled hard toward ":"Leans toward ")+side;
+}
+function drawMap(){
+  svg.innerHTML="";
+  for(let k=5;k>=1;k--){
+    el("ellipse",{cx:PX,cy:PY+6,rx:k*36,ry:k*38,fill:"none",stroke:"var(--contour)","stroke-width":k===1?1.6:1});
+  }
+  el("line",{x1:AX,y1:BASE,x2:BX,y2:BASE,stroke:"var(--line)","stroke-width":2});
+  const gs=state.guesses[state.round]||[];
+  gs.forEach((g,i)=>{
+    const p=pos(g), last=i===gs.length-1;
+    const op=last?0.9:0.35;
+    el("line",{x1:AX,y1:BASE,x2:p.x,y2:p.y,stroke:"var(--a)","stroke-width":last?1.6:1,"stroke-dasharray":"3 4",opacity:op});
+    el("line",{x1:BX,y1:BASE,x2:p.x,y2:p.y,stroke:"var(--b)","stroke-width":last?1.6:1,"stroke-dasharray":"3 4",opacity:op});
+  });
+  // peak
+  const pk=el("g",{});
+  el("path",{d:`M${PX} ${PY-9} L${PX+8} ${PY+5} L${PX-8} ${PY+5} Z`,fill:"none",stroke:"var(--peak)","stroke-width":2},pk);
+  const done=roundOver();
+  if(done){const t=el("text",{x:PX,y:PY-14,"text-anchor":"middle","font-size":13,"font-weight":700,fill:"var(--peak)","font-family":"Atkinson Hyperlegible, sans-serif"});t.textContent=P.top[0];}
+  // pins
+  for(const [x,c] of [[AX,"var(--a)"],[BX,"var(--b)"]]){
+    el("circle",{cx:x,cy:BASE,r:7,fill:c});
+    el("circle",{cx:x,cy:BASE,r:12,fill:"none",stroke:c,"stroke-width":1.5,opacity:.5});
+  }
+  gs.forEach((g,i)=>{
+    const p=pos(g), last=i===gs.length-1;
+    const grp=el("g",{class:"dot"});
+    el("circle",{cx:p.x,cy:p.y,r:last?7:5,fill:"var(--ink)",stroke:"var(--sheet)","stroke-width":2},grp);
+    const right=p.x<PX+40;
+    const t=el("text",{x:p.x+(right?11:-11),y:p.y+4,"text-anchor":right?"start":"end","font-size":13,"font-weight":last?700:400,fill:"var(--ink)","font-family":"Atkinson Hyperlegible, sans-serif"},grp);
+    t.textContent=g.w;
+  });
+}
+function roundOver(){const gs=state.guesses[state.round]||[];return gs.length>=GUESSES||gs.some(g=>g.rank===1);}
+function bestOf(gs){return gs.reduce((m,g)=>Math.max(m,g.pts),0);}
+
+function render(){
+  $("day").textContent=state.mode==="daily"?"Day "+DAY:"Random pair";
+  const r=$("rounds"); r.innerHTML="";
+  const n=state.mode==="daily"?PER_DAY:1;
+  for(let k=0;k<n;k++){const s=document.createElement("span");if(k<state.round)s.className="done";else if(k===state.round)s.className="now";r.appendChild(s);}
+  if(state.mode==="daily"&&state.round>=PER_DAY){showSummary();return;}
+  document.querySelector(".pair").classList.remove("hidden");
+  const [a,b]=state.pairs[state.round];
+  if(!P||P.a!==a||P.b!==b) P=buildPair(a,b);
+  $("wa").textContent=a; $("wb").textContent=b;
+  drawMap();
+  const gs=state.guesses[state.round];
+  const ol=$("guesses"); ol.innerHTML="";
+  const best=bestOf(gs);
+  gs.forEach(g=>{
+    const li=document.createElement("li"); if(g.pts===best&&gs.length>1) li.className="best";
+    li.innerHTML=`<span class="gw"></span><span class="gp">${g.pts}</span><span class="gl"></span>`;
+    li.querySelector(".gw").textContent=g.w;
+    li.querySelector(".gl").textContent=(g.rank===1?"The peak word. ":"Rank "+g.rank.toLocaleString()+". ")+leanText(g)+".";
+    ol.appendChild(li);
+  });
+  const over=roundOver();
+  $("form").classList.toggle("hidden",over);
+  const left=GUESSES-gs.length;
+  if(!over&&!msg.classList.contains("err")) msg.textContent=gs.length?left+(left===1?" guess left":" guesses left"):"Three guesses. Your best one counts.";
+  if(over){msg.textContent="";showReveal();} else {$("reveal").classList.add("hidden");}
+  $("summary").classList.add("hidden");
+}
+function showReveal(){
+  const gs=state.guesses[state.round], best=bestOf(gs);
+  const box=$("reveal"); box.classList.remove("hidden");
+  const tops=P.top.slice(0,5).map((w,i)=>`<li></li>`).join("");
+  const last=state.mode==="daily"&&state.round===PER_DAY-1;
+  box.innerHTML=`<h2>You scored ${best}</h2><p>The strongest links for this pair:</p><ol class="tops">${tops}</ol>
+    <div class="row"><button id="next" type="button">${state.mode==="daily"?(last?"See today’s total":"Next pair"):"Another random pair"}</button>
+    ${state.mode==="random"?'<button id="back" class="ghost" type="button">Back to today</button>':""}</div>`;
+  box.querySelectorAll(".tops li").forEach((li,i)=>{li.textContent=P.top[i];const s=document.createElement("span");s.textContent=pointsForRank(i+1);li.appendChild(s);});
+  $("next").onclick=()=>{
+    if(state.mode==="daily"){state.round++;persist();P=null;render();}
+    else startRandom();
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const bk=$("back"); if(bk) bk.onclick=backToDaily;
+}
+function showSummary(){
+  $("form").classList.add("hidden"); $("guesses").innerHTML=""; $("reveal").classList.add("hidden"); msg.textContent="";
+  $("wa").textContent=""; $("wb").textContent=""; document.querySelector(".pair").classList.add("hidden");
+  svg.innerHTML="";
+  const scores=state.guesses.map(bestOf), total=scores.reduce((a,b)=>a+b,0);
+  const lines=state.pairs.map((p,i)=>`${p[0]} + ${p[1]}: ${scores[i]}`);
+  const share=`Meetle day ${DAY}: ${total}/300\n`+state.pairs.map((p,i)=>bar(scores[i])).join(" ");
+  const box=$("summary"); box.classList.remove("hidden");
+  box.innerHTML=`<div><span class="total">${total}</span> <span class="of">of 300</span></div>
+    <p>${lines.map(l=>l.replace(/[<>&]/g,"")).join("<br>")}</p>
+    <textarea id="share" rows="2" readonly aria-label="Result to share"></textarea>
+    <div class="row"><button id="copy" type="button">Copy result</button><button id="rand" class="ghost" type="button">Play a random pair</button></div>
+    <p class="msg" style="margin-top:10px">A new set of pairs arrives at midnight.</p>`;
+  $("share").value=share;
+  $("copy").onclick=async()=>{const t=$("share");try{await navigator.clipboard.writeText(t.value);$("copy").textContent="Copied";}catch(e){t.select();try{document.execCommand("copy");$("copy").textContent="Copied";}catch(_){$("copy").textContent="Select and copy the text";}}};
+  $("rand").onclick=startRandom;
+  drawSummaryArt(scores);
+}
+function bar(s){return s>=90?"▲":s>=60?"◆":s>=30?"●":"○";}
+function drawSummaryArt(scores){
+  svg.innerHTML="";
+  for(let k=5;k>=1;k--) el("ellipse",{cx:PX,cy:PY+6,rx:k*36,ry:k*38,fill:"none",stroke:"var(--contour)","stroke-width":k===1?1.6:1});
+  el("path",{d:`M${PX} ${PY-9} L${PX+8} ${PY+5} L${PX-8} ${PY+5} Z`,fill:"none",stroke:"var(--peak)","stroke-width":2});
+  scores.forEach((s,i)=>{
+    const x=PX+(i-1)*70, y=BASE-(s/100)*(BASE-PY);
+    el("line",{x1:x,y1:BASE,x2:x,y2:y,stroke:"var(--soft)","stroke-width":1.5,"stroke-dasharray":"3 4"});
+    el("circle",{cx:x,cy:y,r:7,fill:"var(--ink)",stroke:"var(--sheet)","stroke-width":2});
+    [state.pairs[i][0],"+ "+state.pairs[i][1]].forEach((s2,k)=>{const t=el("text",{x:x,y:y-14-(1-k)*14,"text-anchor":"middle","font-size":12,fill:"var(--soft)","font-family":"Atkinson Hyperlegible, sans-serif"});t.textContent=s2;});
+  });
+  svg.setAttribute("viewBox","0 0 340 250");
+}
+function persist(){if(state.mode==="daily")save(KEY,{round:state.round,guesses:state.guesses});}
+let dailyBackup=null;
+function startRandom(){
+  if(state.mode==="daily") dailyBackup=state;
+  const p=D.p[Math.floor(Math.random()*D.p.length)];
+  state={mode:"random",pairs:[p],round:0,guesses:[[]]}; P=null; msg.classList.remove("err"); render(); inp.focus({preventScroll:true});
+}
+function backToDaily(){state=dailyBackup||state; state.mode="daily"; P=null; render(); window.scrollTo({top:0,behavior:"smooth"});}
+
+$("form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const g=inp.value.trim().toLowerCase();
+  msg.classList.remove("err");
+  if(!g) return;
+  const err=t=>{msg.textContent=t;msg.classList.add("err");};
+  if(!/^[a-z]+$/.test(g)) return err("Use a single word, letters only.");
+  if(forbidden(g,P.a)||forbidden(g,P.b)) return err("That’s too close to one of the two words. Try something in between.");
+  if(!idx.has(g)){
+    const stem=g.endsWith("ies")?g.slice(0,-3)+"y":g.endsWith("s")?g.slice(0,-1):null;
+    if(stem&&idx.has(stem)) return err("Try the singular: "+stem+".");
+    return err("“"+g+"” isn’t in the word list. Names and rare words are left out.");
+  }
+  const gs=state.guesses[state.round];
+  if(gs.some(x=>x.w===g)) return err("You already tried "+g+".");
+  gs.push(scoreGuess(P,g)); inp.value=""; persist(); render();
+  if(!roundOver()) inp.focus({preventScroll:true});
+});
+
+render();
+})();
+</script>
+</body>
+</html>
