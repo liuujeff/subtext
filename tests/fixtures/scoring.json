@@ -1,0 +1,440 @@
+{
+ "constants": {
+  "RANK_CAP": 25000,
+  "POINTS_CURVE": 0.6,
+  "GUESSES": 3,
+  "ROUNDS_PER_DAY": 5,
+  "POOL_SIZE": 25000,
+  "DAILY_START": "2026-10-21"
+ },
+ "points": [
+  [
+   1,
+   100
+  ],
+  [
+   2,
+   96
+  ],
+  [
+   3,
+   93
+  ],
+  [
+   4,
+   92
+  ],
+  [
+   5,
+   90
+  ],
+  [
+   6,
+   89
+  ],
+  [
+   7,
+   88
+  ],
+  [
+   8,
+   87
+  ],
+  [
+   9,
+   86
+  ],
+  [
+   10,
+   86
+  ],
+  [
+   11,
+   85
+  ],
+  [
+   12,
+   84
+  ],
+  [
+   13,
+   84
+  ],
+  [
+   14,
+   83
+  ],
+  [
+   15,
+   83
+  ],
+  [
+   16,
+   83
+  ],
+  [
+   17,
+   82
+  ],
+  [
+   18,
+   82
+  ],
+  [
+   19,
+   81
+  ],
+  [
+   20,
+   81
+  ],
+  [
+   50,
+   75
+  ],
+  [
+   99,
+   70
+  ],
+  [
+   100,
+   69
+  ],
+  [
+   101,
+   69
+  ],
+  [
+   500,
+   57
+  ],
+  [
+   1000,
+   50
+  ],
+  [
+   3000,
+   39
+  ],
+  [
+   5000,
+   33
+  ],
+  [
+   10000,
+   24
+  ],
+  [
+   12500,
+   20
+  ],
+  [
+   24999,
+   0
+  ],
+  [
+   25000,
+   0
+  ],
+  [
+   25001,
+   0
+  ]
+ ],
+ "forbidden": [
+  [
+   "camel",
+   "camel",
+   true
+  ],
+  [
+   "camels",
+   "camel",
+   true
+  ],
+  [
+   "came",
+   "camel",
+   true
+  ],
+  [
+   "cam",
+   "camel",
+   false
+  ],
+  [
+   "shipment",
+   "ship",
+   true
+  ],
+  [
+   "ships",
+   "ship",
+   true
+  ],
+  [
+   "hip",
+   "ship",
+   false
+  ],
+  [
+   "iceberg",
+   "ice",
+   false
+  ],
+  [
+   "icebox",
+   "ice",
+   false
+  ],
+  [
+   "ice",
+   "iceberg",
+   false
+  ],
+  [
+   "fire",
+   "firework",
+   true
+  ],
+  [
+   "work",
+   "firework",
+   true
+  ],
+  [
+   "sunflower",
+   "flower",
+   true
+  ],
+  [
+   "flow",
+   "flower",
+   true
+  ],
+  [
+   "lower",
+   "flower",
+   true
+  ],
+  [
+   "harbour",
+   "harbor",
+   true
+  ],
+  [
+   "harmony",
+   "harbor",
+   false
+  ],
+  [
+   "desert",
+   "camel",
+   false
+  ],
+  [
+   "art",
+   "heart",
+   false
+  ],
+  [
+   "heart",
+   "art",
+   false
+  ]
+ ],
+ "guesses": [
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "wagon",
+   "rank": 1,
+   "points": 100,
+   "lean": -0.04741057753562927
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "lorry",
+   "rank": 2,
+   "points": 96,
+   "lean": -0.02708272635936737
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "convoy",
+   "rank": 3,
+   "points": 93,
+   "lean": 0.18444892764091492
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "smuggler",
+   "rank": 10,
+   "points": 86,
+   "lean": 0.04239703714847565
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "contraband",
+   "rank": 100,
+   "points": 69,
+   "lean": 0.07668696343898773
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "weathered",
+   "rank": 1000,
+   "points": 50,
+   "lean": -0.04347553104162216
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "endorse",
+   "rank": 5000,
+   "points": 33,
+   "lean": -0.05807623267173767
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "wisecracker",
+   "rank": 6947,
+   "points": 29,
+   "lean": 0.004999982193112373
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "yellowbelly",
+   "rank": 4712,
+   "points": 34,
+   "lean": -0.058984510600566864
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "zati",
+   "rank": 6397,
+   "points": 30,
+   "lean": -0.12639468908309937
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "zettabyte",
+   "rank": 9845,
+   "points": 24,
+   "lean": -0.015870749950408936
+  },
+  {
+   "a": "camel",
+   "b": "ship",
+   "word": "zwitterion",
+   "rank": 5865,
+   "points": 31,
+   "lean": 0.012233494780957699
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "mermaid",
+   "rank": 1,
+   "points": 100,
+   "lean": -0.0517541766166687
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "foggy",
+   "rank": 2,
+   "points": 96,
+   "lean": -0.02793411910533905
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "fog",
+   "rank": 3,
+   "points": 93,
+   "lean": -0.0282505601644516
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "resident",
+   "rank": 10,
+   "points": 86,
+   "lean": 0.006156355142593384
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "parking",
+   "rank": 100,
+   "points": 69,
+   "lean": -0.056898728013038635
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "urban",
+   "rank": 1000,
+   "points": 50,
+   "lean": 0.047823045402765274
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "handbag",
+   "rank": 5000,
+   "points": 33,
+   "lean": 0.005514081567525864
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "wisecracker",
+   "rank": 23195,
+   "points": 5,
+   "lean": -0.07952402532100677
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "yellowbelly",
+   "rank": 1391,
+   "points": 47,
+   "lean": -0.008121233433485031
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "zati",
+   "rank": 9706,
+   "points": 24,
+   "lean": 0.034011904150247574
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "zettabyte",
+   "rank": 7588,
+   "points": 28,
+   "lean": 0.0182647742331028
+  },
+  {
+   "a": "harbor",
+   "b": "nightmare",
+   "word": "zwitterion",
+   "rank": 15962,
+   "points": 15,
+   "lean": 0.10014329105615616
+  }
+ ]
+}
