@@ -218,6 +218,10 @@ All responses are JSON; errors are `{ error, ... }`.
   focus (blank space, then a snap), before the viewport reports the keyboard, so when a
   text field the player just touched takes focus, the crop is applied at once using the
   last keyboard height seen (`subtext-keyboard` in localStorage, else 40% of the screen).
+  That guess holds while the keyboard is still sliding up (the area above it is taller than
+  the guess until it stops; following it bounced the guess bar down and back up) and gives way
+  to the real size once the viewport has been still for 150 ms. The height is remembered
+  only once settled too: a closing keyboard passes through every smaller height.
   Not on the touch itself: moving the field from under the finger before the tap ends
   sends the tap elsewhere and no keyboard opens (that broke Chrome and Safari); and while the keyboard is
   up, page drags are blocked (`touchmove` preventDefault, except in the menu dialog). Fire and the spelling suggestion keep focus, and the keyboard,

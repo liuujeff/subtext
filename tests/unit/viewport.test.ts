@@ -101,10 +101,41 @@ describe("trackVisibleArea", () => {
     expect(height()).toBe(`${660 - 700 * 0.4}px`); // first time: 40% of the screen
     move({ height: 350 });
     expect(height()).toBe("350px");
+    vi.advanceTimersByTime(150);
     expect(storage.get("subtext-keyboard")).toBe("310");
     move({ height: 660 });
     tap();
     expect(height()).toBe("350px"); // next time: the keyboard seen before
+    stop();
+  });
+
+  it("holds the fit while the keyboard is still sliding up, then takes its real size", () => {
+    const { move, tap, height } = setUp(660, { stored: "300" });
+    const stop = trackVisibleArea();
+    tap();
+    expect(height()).toBe("360px");
+    move({ height: 500 }); // halfway: following it would drop the guess bar
+    expect(height()).toBe("360px");
+    move({ height: 380 }); // a smaller keyboard than last time, and it stops
+    expect(height()).toBe("360px");
+    vi.advanceTimersByTime(150);
+    expect(height()).toBe("380px");
+    move({ height: 300 }); // up and settled: follow it (a taller keyboard)
+    expect(height()).toBe("300px");
+    stop();
+  });
+
+  it("remembers the keyboard's height only once it stops moving", () => {
+    const { move, storage } = setUp(660);
+    const stop = trackVisibleArea();
+    move({ height: 350 });
+    vi.advanceTimersByTime(150);
+    expect(storage.get("subtext-keyboard")).toBe("310");
+    move({ height: 450 }); // closing: it passes through smaller heights
+    move({ height: 540 });
+    move({ height: 660 });
+    vi.advanceTimersByTime(150);
+    expect(storage.get("subtext-keyboard")).toBe("310");
     stop();
   });
 

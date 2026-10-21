@@ -14,7 +14,9 @@
 //   the keyboard. So when a field the player touched takes focus, the game is
 //   fitted to the keyboard height seen last time (or a guess); the field is
 //   then already above the keyboard and Safari has nothing to slide. The real
-//   size replaces the guess once the keyboard reports it. Not on the touch
+//   size replaces the guess once the keyboard has settled: while it's still
+//   sliding up, the area above it is taller than the guess, and following
+//   it would push the guess bar down and back up again. Not on the touch
 //   itself: moving the field from under the finger before the tap ends sends
 //   the tap elsewhere, and the field never gets focus (no keyboard). Not on
 //   focus set from code either: that opens no keyboard on iOS.
@@ -30,6 +32,8 @@ const GUESS_SHARE = 0.4;
 // Focus that brings up no keyboard (a hardware keyboard): let go of the guess
 // if the viewport still hasn't shrunk by then.
 const NO_KEYBOARD_MS = 800;
+// The keyboard has stopped moving once the viewport is this still.
+const SETTLE_MS = 150;
 // Focus this soon after a touch on the same field came from that touch.
 const TOUCH_FOCUS_MS = 1000;
 const STORE_KEY = "subtext-keyboard";
@@ -54,10 +58,13 @@ export function trackVisibleArea(): () => void {
   const touch = window.matchMedia?.("(pointer: coarse)").matches ?? false;
   let keyboard = storedKeyboard();
   let frame = 0;
+  let still: number | undefined; // the keyboard's height is remembered once it stops
   let waiting: number | undefined; // a guess is up, waiting for the keyboard
+  let shown = 0; // the height the game is fitted to
   let touched: { target: EventTarget | null; at: number } = { target: null, at: 0 };
 
   const set = (height: number, top: number) => {
+    shown = height;
     root.dataset.keyboard = "";
     root.style.setProperty("--visible-height", `${Math.round(height)}px`);
     root.style.setProperty("--visible-top", `${Math.round(top)}px`);
@@ -71,21 +78,37 @@ export function trackVisibleArea(): () => void {
     // Pinch-zoom also shrinks the visual viewport; that isn't a keyboard.
     Math.abs(vv.scale - 1) <= 0.01 && window.innerHeight - vv.height >= KEYBOARD_PX;
 
+  const settle = (ms: number) => {
+    window.clearTimeout(waiting);
+    waiting = window.setTimeout(() => {
+      waiting = undefined;
+      update();
+    }, ms);
+  };
   const update = () => {
     if (!keyboardUp()) {
       if (waiting === undefined) clear();
       return;
     }
+    if (waiting !== undefined && vv.height > shown + 1) {
+      // Still sliding up past the guess: wait until it stops.
+      settle(SETTLE_MS);
+      return;
+    }
     window.clearTimeout(waiting);
     waiting = undefined;
-    const covered = window.innerHeight - vv.height;
-    if (Math.abs(covered - keyboard) >= 1) {
-      keyboard = covered;
-      try {
-        localStorage.setItem(STORE_KEY, String(Math.round(covered)));
-      } catch {}
-    }
     set(vv.height, vv.offsetTop);
+    // Not mid-slide: a keyboard closing passes through every smaller height.
+    window.clearTimeout(still);
+    still = window.setTimeout(remember, SETTLE_MS);
+  };
+  const remember = () => {
+    const covered = window.innerHeight - vv.height;
+    if (!keyboardUp() || Math.abs(covered - keyboard) < 1) return;
+    keyboard = covered;
+    try {
+      localStorage.setItem(STORE_KEY, String(Math.round(covered)));
+    } catch {}
   };
   // At most once per frame while the keyboard animates.
   const schedule = () => {
@@ -100,11 +123,7 @@ export function trackVisibleArea(): () => void {
     const fromTouch = touched.target === e.target && Date.now() - touched.at < TOUCH_FOCUS_MS;
     if (!touch || !fromTouch || !isTextField(e.target) || keyboardUp()) return;
     set(window.innerHeight - (keyboard || window.screen.height * GUESS_SHARE), 0);
-    window.clearTimeout(waiting);
-    waiting = window.setTimeout(() => {
-      waiting = undefined;
-      update();
-    }, NO_KEYBOARD_MS);
+    settle(NO_KEYBOARD_MS);
   };
 
   const onTouchMove = (e: TouchEvent) => {
@@ -128,6 +147,7 @@ export function trackVisibleArea(): () => void {
     document.removeEventListener("touchmove", onTouchMove);
     cancelAnimationFrame(frame);
     window.clearTimeout(waiting);
+    window.clearTimeout(still);
     clear();
   };
 }
