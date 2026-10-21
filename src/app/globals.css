@@ -163,6 +163,7 @@ button:disabled{opacity:.4;cursor:default}
 .summary .total{font-family:var(--mono);font-weight:800;font-size:2.4rem;line-height:1;
   color:var(--glow);text-shadow:0 0 14px var(--shine)}
 .summary .of{font-family:var(--mono);color:var(--soft)}
+.summary .streak{font-family:var(--mono);color:var(--glow)}
 .summary p{margin:6px 0}
 .summary .row button{padding:10px 14px;font-size:.9rem;letter-spacing:.04em}
 .summary textarea.unseen{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
@@ -193,6 +194,16 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 .theme input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
 .theme label:has(input:checked){background:var(--glow);border-color:var(--glow);color:var(--on-glow)}
 .theme label:has(input:focus-visible){outline:2px solid var(--glow);outline-offset:2px}
+
+/* Account and stats, in the drawer. */
+.account{margin:22px 0 0}
+.account h3{margin:0 0 8px;font-size:.9rem;font-weight:400;color:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.stats div{border:1px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center}
+.stats dt{font-size:.7rem;color:var(--soft);line-height:1.2;min-height:2.4em}
+.stats dd{margin:2px 0 0;font:800 1.4rem var(--mono);color:var(--glow)}
+.account .note{font-size:.8rem}
+.account .who{display:flex;flex-direction:column;gap:8px;align-items:flex-start;margin-top:12px;color:var(--soft)}
 
 /* Short screens (small phones with browser bars): tighten so the tallest
    state, three guesses plus the reveal, still fits. */

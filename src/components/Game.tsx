@@ -25,6 +25,7 @@ import {
   ROUNDS_PER_DAY,
   WORD_PATTERN,
 } from "@/lib/game/rules";
+import type { Stats } from "@/lib/game/stats";
 import type { PuzzleRound, TopAnswer } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
 
@@ -198,6 +199,19 @@ export function Game({ children }: { children: ReactNode }) {
   const timedOut = !!round && !isRoundOver(round.guesses) && timeUp(round, now);
   const over = round ? isRoundOver(round.guesses) || timedOut : false;
   const inSummary = view.mode === "daily" && daily.status === "ready" && view.round >= daily.rounds.length;
+  // The day's streak, once the day's summary is up.
+  const [stats, setStats] = useState<Stats | null>(null);
+  useEffect(() => {
+    if (!inSummary) return;
+    let active = true;
+    api
+      .stats()
+      .then((s) => active && setStats(s))
+      .catch(() => {}); // the summary is complete without it
+    return () => {
+      active = false;
+    };
+  }, [inSummary]);
   // The clock: full before the start, hidden once guesses end the round.
   const secondsLeft =
     !round || isRoundOver(round.guesses)
@@ -364,7 +378,7 @@ export function Game({ children }: { children: ReactNode }) {
   return (
     <main className="game" style={{ "--land": `${LANDING}s` } as CSSProperties}>
       <header className="top">
-        <HowToPlay onRandom={() => void startRandom()}>{children}</HowToPlay>
+        <HowToPlay onRandom={() => void startRandom()} onAccountChange={reloadToday}>{children}</HowToPlay>
         <h1>Subtext</h1>
         {view.mode === "random" ? (
           <button type="button" className="ghost back" onClick={backToDaily}>
@@ -441,7 +455,7 @@ export function Game({ children }: { children: ReactNode }) {
         />
       )}
       {inSummary && daily.status === "ready" && (
-        <DaySummary date={daily.date} rounds={daily.rounds} onRandom={() => void startRandom()} />
+        <DaySummary date={daily.date} rounds={daily.rounds} streak={stats?.currentStreak ?? 0} onRandom={() => void startRandom()} />
       )}
 
       <p className={message?.error ? "msg err" : "msg"} role="status" aria-live="polite">

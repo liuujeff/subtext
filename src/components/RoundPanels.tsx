@@ -33,7 +33,7 @@ export function RevealPanel(props: {
   );
 }
 
-export function DaySummary(props: { date: string; rounds: PuzzleRound[]; onRandom: () => void }) {
+export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak: number; onRandom: () => void }) {
   const scores = props.rounds.map((r) => bestPoints(r.guesses));
   const total = scores.reduce((sum, s) => sum + s, 0);
   const max = props.rounds.length * 100;
@@ -66,6 +66,7 @@ export function DaySummary(props: { date: string; rounds: PuzzleRound[]; onRando
     <div className="summary">
       <div>
         <span className="total">{total}</span> <span className="of">of {max}</span>
+        {props.streak > 1 && <span className="streak"> · {props.streak}-day streak</span>}
       </div>
       <textarea
         ref={shareRef}
