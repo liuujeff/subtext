@@ -2,7 +2,7 @@
 -- inflections, puzzles, round starts or another player's guesses, and must not
 -- be able to call score_guess through the Data API.
 begin;
-select plan(33);
+select plan(39);
 
 -- Fixtures (as postgres). Made-up words, ids and dates, so real uploaded
 -- data never collides with them. ------------------------------------------
@@ -48,6 +48,12 @@ select function_privs_are('public', 'suggest_words', array['text', 'integer'], '
   'anon cannot execute suggest_words');
 select function_privs_are('public', 'suggest_words', array['text', 'integer'], 'authenticated', array[]::text[],
   'authenticated cannot execute suggest_words');
+
+select function_privs_are('public', f, array[a, b], r, case r when 'service_role' then array['EXECUTE'] else array[]::text[] end,
+  format('%s on %s', r, f))
+  from (values ('daily_results', 'uuid', 'integer'), ('merge_guest', 'uuid', 'uuid')) as fn (f, a, b),
+       unnest(array['anon', 'authenticated', 'service_role']) as r
+ order by f, r;
 
 -- As a signed-in (anonymous) player ---------------------------------------
 

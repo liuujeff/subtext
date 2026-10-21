@@ -111,7 +111,15 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "score_guess":
+            "daily_results":
+{ Args: { "p_expire_secs": number,"p_player": string }; Returns: {
+              "finished": number,"hits": number,"play_date": string,"points": number
+            }[]
+                           },
+"merge_guest":
+{ Args: { "p_guest": string,"p_user": string }; Returns: number
+                           },
+"score_guess":
 { Args: { "p_puzzle_id": number,"p_word": string }; Returns: {
               "lean": number,"objective": number,"rank": number
             }[]
