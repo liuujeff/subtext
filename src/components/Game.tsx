@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  type TouchEvent,
 } from "react";
 
 import { api, ApiError } from "@/lib/game/api-client";
@@ -49,6 +50,28 @@ const timeUp = (r: Round, now: number) => r.deadline !== null && now >= r.deadli
 // The latest guess fired: `hit` once the server has scored it, when the map
 // runs its torpedo out to the blip.
 type Shot = { puzzleId: number; word: string; hit: boolean } | null;
+
+// Handlers for a button next to the guess field that mustn't take focus from
+// it: the keyboard stays up. A cancelled pointerdown keeps focus in Chrome and
+// on desktops, but iOS still moves focus on the tap (the keyboard drops, then
+// comes back), so a touch cancels the rest of the tap on touchend (no focus
+// change, no click of its own) and clicks the button from there instead.
+const keepsFocus = {
+  onPointerDown: (e: { preventDefault(): void }) => e.preventDefault(),
+  onTouchEnd: (e: TouchEvent<HTMLButtonElement>) => {
+    const touch = e.changedTouches[0];
+    const box = e.currentTarget.getBoundingClientRect();
+    const inside =
+      !!touch &&
+      touch.clientX >= box.left &&
+      touch.clientX <= box.right &&
+      touch.clientY >= box.top &&
+      touch.clientY <= box.bottom;
+    if (!inside) return; // slid off the button: not a tap
+    e.preventDefault();
+    e.currentTarget.click(); // does nothing while disabled
+  },
+};
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -281,6 +304,8 @@ export function Game({ children }: { children: ReactNode }) {
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    // Still inside the tap or key press, so iOS keeps (or brings back) the keyboard.
+    inputRef.current?.focus({ preventScroll: true });
     void guessWord(input);
   }
 
@@ -372,7 +397,7 @@ export function Game({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="suggest"
-            onPointerDown={(e) => e.preventDefault()}
+            {...keepsFocus}
             onClick={() => {
               setInput(message.suggestion!);
               void guessWord(message.suggestion!);
@@ -473,7 +498,7 @@ export function Game({ children }: { children: ReactNode }) {
                 maxLength={MAX_WORD_LENGTH}
               />
               {/* Firing keeps focus in the field, so the keyboard stays up between guesses. */}
-              <button type="submit" disabled={pending} onPointerDown={(e) => e.preventDefault()}>
+              <button type="submit" disabled={pending} {...keepsFocus}>
                 Fire
               </button>
             </form>

@@ -220,8 +220,10 @@ All responses are JSON; errors are `{ error, ... }`.
   last keyboard height seen (`subtext-keyboard` in localStorage, else 40% of the screen).
   Not on the touch itself: moving the field from under the finger before the tap ends
   sends the tap elsewhere and no keyboard opens (that broke Chrome and Safari); and while the keyboard is
-  up, page drags are blocked (`touchmove` preventDefault, except in the menu dialog). Fire and the spelling suggestion `preventDefault` on pointerdown
-  so focus, and the keyboard, stay up between guesses. Safari has no `interactive-widget`
+  up, page drags are blocked (`touchmove` preventDefault, except in the menu dialog). Fire and the spelling suggestion keep focus, and the keyboard,
+  in the field between guesses (`keepsFocus` in `Game.tsx`): `preventDefault` on pointerdown
+  is enough in Chrome, but iOS moves focus on the tap anyway (the keyboard drops and comes
+  back), so a touch cancels the rest of the tap on touchend and clicks the button from there. Safari has no `interactive-widget`
   (WebKit bug 259770) and Android Chrome's default (`resizes-visual`) matches it, so both
   take the same path; don't set `interactiveWidget: "resizes-content"`. Earlier versions
   scaled the game to fit (the scope jumped and jittered on Safari) and then scrolled it
