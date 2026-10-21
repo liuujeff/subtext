@@ -200,25 +200,24 @@ describe("POST /api/account/link", () => {
 });
 
 describe("GET /api/distribution", () => {
-  it("counts finished days in 50-point buckets and finds the player's total", async () => {
+  it("summarizes finished days and places the player among them", async () => {
     const strong = await signedInPlayer();
+    const middle = await signedInPlayer();
     const weak = await signedInPlayer();
     const open = await signedInPlayer();
     await play(strong.id, TODAY, [0, 1, 2, 3, 4], 80); // 400
+    await play(middle.id, TODAY, [0, 1, 2, 3, 4], 60); // 300
     await play(weak.id, TODAY, [0, 1, 2, 3, 4], 40); // 200
     await play(open.id, TODAY, [0, 1], 90); // two rounds only: not counted
 
     const res = await distribution({ token: strong.token });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ date: TODAY, players: 2, total: 400 });
-    const buckets = res.body.buckets as number[];
-    expect(buckets).toHaveLength(10);
-    expect(buckets[8]).toBe(1);
-    expect(buckets[4]).toBe(1);
-    expect(buckets.reduce((a, b) => a + b, 0)).toBe(2);
+    expect(res.body).toEqual({ date: TODAY, players: 3, mean: 300, sd: 81.6, total: 400, below: 2 });
+    expect((await distribution({ token: middle.token })).body).toMatchObject({ total: 300, below: 1 });
+    expect((await distribution({ token: weak.token })).body).toMatchObject({ total: 200, below: 0 });
 
-    // Someone who hasn't finished sees the spread but no total of their own.
-    expect((await distribution({ token: open.token })).body).toMatchObject({ players: 2, total: null });
-    expect((await distribution({})).body).toMatchObject({ players: 2, total: null });
+    // Someone who hasn't finished sees the spread but no place in it.
+    expect((await distribution({ token: open.token })).body).toMatchObject({ players: 3, total: null, below: null });
+    expect((await distribution({})).body).toMatchObject({ players: 3, total: null, below: null });
   });
 });

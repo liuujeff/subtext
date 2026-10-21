@@ -55,7 +55,7 @@ select function_privs_are('public', f, array[a, b], r, case r when 'service_role
        unnest(array['anon', 'authenticated', 'service_role']) as r
  order by f, r;
 
-select function_privs_are('public', 'day_distribution', array['date', 'integer', 'integer'], r,
+select function_privs_are('public', 'day_distribution', array['date', 'integer', 'integer', 'integer'], r,
   case r when 'service_role' then array['EXECUTE'] else array[]::text[] end, format('%s on day_distribution', r))
   from unnest(array['anon', 'authenticated', 'service_role']) as r
  order by r;

@@ -117,8 +117,8 @@ isOneToOne: false
             }[]
                            },
 "day_distribution":
-{ Args: { "p_date": string,"p_expire_secs": number,"p_rounds": number }; Returns: {
-              "bucket": number,"players": number
+{ Args: { "p_date": string,"p_expire_secs": number,"p_rounds": number,"p_total": number }; Returns: {
+              "below": number,"mean": number,"players": number,"sd": number
             }[]
                            },
 "merge_guest":

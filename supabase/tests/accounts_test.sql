@@ -38,13 +38,13 @@ select is((select finished from public.daily_results('00000000-0000-0000-0000-00
 select is((select finished from public.daily_results('00000000-0000-0000-0000-00000000000a', -1) where play_date = '1990-01-02'), 1, 'it finishes once its clock runs out');
 select is((select count(*) from public.daily_results('00000000-0000-0000-0000-0000000000ff', 2000000000)), 0::bigint, 'a stranger has no results');
 
--- day_distribution: only player ...0a played day 1 so far, finished with 70 points (bucket 1).
+-- day_distribution: only player ...0a played day 1 so far, finished with 70 points.
 select results_eq(
-  $$select bucket, players from public.day_distribution('1990-01-01', 2000000000, 1)$$,
-  $$values (1, 1)$$,
-  'a finished day lands in its 50-point bucket'
+  $$select players, mean, sd, below from public.day_distribution('1990-01-01', 2000000000, 1, 100)$$,
+  $$values (1, 70::double precision, 0::double precision, 1)$$,
+  'one finished player: their total is the mean, and 100 is above it'
 );
-select is((select count(*) from public.day_distribution('1990-01-01', 2000000000, 2)), 0::bigint, 'a day with fewer finished rounds than required is left out');
+select is((select players from public.day_distribution('1990-01-01', 2000000000, 2, null)), 0, 'a day with fewer finished rounds than required is left out');
 
 -- merge_guest: guest ...0b played days 1 and 2; user ...0c already played day 1.
 insert into public.round_starts (player_id, puzzle_id, started_at)

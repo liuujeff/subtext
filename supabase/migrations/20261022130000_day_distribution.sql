@@ -1,10 +1,12 @@
--- day_distribution: how everyone's totals for one daily spread out. A player
--- counts once they have finished all p_rounds rounds of that day, started on
--- the day itself (same rules as daily_results). Totals are the sum of each
--- round's best guess, in buckets of 50 points (0-49 ... 450-500, so 10 buckets
--- for a 500-point day). Only counts: no player ids, words or answers.
-create function public.day_distribution(p_date date, p_expire_secs int, p_rounds int)
-returns table (bucket int, players int)
+-- day_distribution: how everyone's totals for one daily spread out, for the
+-- bell curve on the day summary. A player counts once they have finished all
+-- p_rounds rounds of that day, started on the day itself (same rules as
+-- daily_results). A total is the sum of each round's best guess. Returns the
+-- number of players, the mean and standard deviation of their totals, and how
+-- many scored strictly below p_total (the asking player's total; null gives 0).
+-- Only aggregates: no player ids, words or answers.
+create function public.day_distribution(p_date date, p_expire_secs int, p_rounds int, p_total int)
+returns table (players int, mean double precision, sd double precision, below int)
 language sql
 stable
 set search_path = ''
@@ -27,11 +29,12 @@ as $$
      group by player_id
     having count(*) filter (where done) >= p_rounds
   )
-  select least(total / 50, 9)::int, count(*)::int
-    from totals
-   group by 1
-   order by 1;
+  select count(*)::int,
+         coalesce(avg(total), 0)::double precision,
+         coalesce(stddev_pop(total), 0)::double precision,
+         (count(*) filter (where total < p_total))::int
+    from totals;
 $$;
 
-revoke all on function public.day_distribution(date, int, int) from public, anon, authenticated;
-grant execute on function public.day_distribution(date, int, int) to service_role;
+revoke all on function public.day_distribution(date, int, int, int) from public, anon, authenticated;
+grant execute on function public.day_distribution(date, int, int, int) to service_role;

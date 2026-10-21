@@ -32,8 +32,19 @@ export type RandomResponse = PuzzleRound;
 
 export type StatsResponse = Stats;
 
-/** Everyone's totals for today, in buckets of 50 points; `total` is the player's own once they've finished the day. */
-export type DistributionResponse = { date: string; buckets: number[]; players: number; total: number | null };
+/**
+ * How today's totals spread across everyone who has finished the day: their
+ * number, mean and standard deviation. `total` is the player's own once they
+ * have finished, and `below` how many others scored less (null until then).
+ */
+export type DistributionResponse = {
+  date: string;
+  players: number;
+  mean: number;
+  sd: number;
+  total: number | null;
+  below: number | null;
+};
 
 export type LinkResponse = { merged: boolean };
 
