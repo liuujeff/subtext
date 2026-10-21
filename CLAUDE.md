@@ -214,7 +214,11 @@ All responses are JSON; errors are `{ error, ... }`.
   size, so the scope is cropped from the bottom (the empty part below the clues first)
   instead of shrinking. The `.dock` (guess bar + status line) sits right under it, just
   above the keyboard. `html`/`body` don't scroll at all (iOS would scroll the document by
-  the keyboard's height). Fire and the spelling suggestion `preventDefault` on pointerdown
+  the keyboard's height). Safari slides the page up when a field it's about to cover gains
+  focus (blank space, then a snap), before the viewport reports the keyboard, so on a touch
+  on a text field the crop is applied at once using the last keyboard height seen
+  (`subtext-keyboard` in localStorage, else 40% of the screen); and while the keyboard is
+  up, page drags are blocked (`touchmove` preventDefault, except in the menu dialog). Fire and the spelling suggestion `preventDefault` on pointerdown
   so focus, and the keyboard, stay up between guesses. Safari has no `interactive-widget`
   (WebKit bug 259770) and Android Chrome's default (`resizes-visual`) matches it, so both
   take the same path; don't set `interactiveWidget: "resizes-content"`. Earlier versions

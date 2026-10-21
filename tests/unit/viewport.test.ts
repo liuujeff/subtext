@@ -1,32 +1,77 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { trackVisibleArea } from "@/lib/viewport";
 
-// A stand-in for window.visualViewport and <html>'s inline style.
-function setUp(innerHeight: number) {
+// Stand-ins for the browser: the visual viewport, <html>, touches, storage
+// and a phone screen.
+class FakeElement {
+  constructor(
+    readonly tagName: string,
+    readonly type = "",
+    readonly inDialog = false,
+  ) {}
+  closest(selector: string) {
+    return selector === "dialog" && this.inDialog ? this : null;
+  }
+}
+
+function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
   const vv = Object.assign(new EventTarget(), { height: innerHeight, offsetTop: 0, scale: 1 });
   const props = new Map<string, string>();
-  const style = {
-    setProperty: (k: string, v: string) => props.set(k, v),
-    removeProperty: (k: string) => props.delete(k),
-  };
-  vi.stubGlobal("window", { innerHeight, visualViewport: vv });
   const dataset: Record<string, string> = {};
-  vi.stubGlobal("document", { documentElement: { style, dataset } });
+  const doc = Object.assign(new EventTarget(), {
+    documentElement: {
+      dataset,
+      style: {
+        setProperty: (k: string, v: string) => props.set(k, v),
+        removeProperty: (k: string) => props.delete(k),
+      },
+    },
+  });
+  const storage = new Map<string, string>(stored ? [["subtext-keyboard", stored]] : []);
+  vi.stubGlobal("window", {
+    innerHeight,
+    visualViewport: vv,
+    screen: { height: 700 },
+    matchMedia: () => ({ matches: touch }),
+    setTimeout,
+    clearTimeout,
+  });
+  vi.stubGlobal("document", doc);
+  vi.stubGlobal("HTMLElement", FakeElement);
+  vi.stubGlobal("Element", FakeElement);
+  vi.stubGlobal("localStorage", {
+    getItem: (k: string) => storage.get(k) ?? null,
+    setItem: (k: string, v: string) => storage.set(k, v),
+  });
   vi.stubGlobal("requestAnimationFrame", (cb: () => void) => (cb(), 1));
   vi.stubGlobal("cancelAnimationFrame", () => {});
+
   const move = (change: Partial<typeof vv>) => {
     Object.assign(vv, change);
     vv.dispatchEvent(new Event("resize"));
   };
-  return { props, move, dataset };
+  const dispatch = (type: string, target: FakeElement) => {
+    const e = new Event(type, { cancelable: true });
+    Object.defineProperty(e, "target", { value: target });
+    doc.dispatchEvent(e);
+    return e;
+  };
+  const tap = (el = new FakeElement("INPUT", "text")) => dispatch("pointerdown", el);
+  const drag = (el = new FakeElement("DIV")) => dispatch("touchmove", el);
+  const height = () => props.get("--visible-height") ?? null;
+  return { props, dataset, storage, move, tap, drag, height };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("trackVisibleArea", () => {
   it("follows the area above the keyboard and lets go when it closes", () => {
-    const { props, move, dataset } = setUp(660);
+    const { props, dataset, move } = setUp(660);
     const stop = trackVisibleArea();
     expect(props.size).toBe(0);
 
@@ -38,6 +83,50 @@ describe("trackVisibleArea", () => {
     move({ height: 660, offsetTop: 0 });
     expect(props.size).toBe(0);
     expect("keyboard" in dataset).toBe(false);
+    stop();
+  });
+
+  it("fits a touched field straight away, before the keyboard reports its size", () => {
+    const { move, tap, height, storage } = setUp(660);
+    const stop = trackVisibleArea();
+    tap();
+    expect(height()).toBe(`${660 - 700 * 0.4}px`); // first time: 40% of the screen
+    move({ height: 350 });
+    expect(height()).toBe("350px");
+    expect(storage.get("subtext-keyboard")).toBe("310");
+    move({ height: 660 });
+    tap();
+    expect(height()).toBe("350px"); // next time: the keyboard seen before
+    stop();
+  });
+
+  it("lets go of the guess if no keyboard comes up, and ignores other taps", () => {
+    const { props, tap } = setUp(660, { stored: "300" });
+    const stop = trackVisibleArea();
+    tap(new FakeElement("BUTTON"));
+    expect(props.size).toBe(0);
+    tap();
+    expect(props.get("--visible-height")).toBe("360px");
+    vi.advanceTimersByTime(1000);
+    expect(props.size).toBe(0);
+    stop();
+  });
+
+  it("doesn't guess without a touch screen", () => {
+    const { props, tap } = setUp(660, { touch: false, stored: "300" });
+    const stop = trackVisibleArea();
+    tap();
+    expect(props.size).toBe(0);
+    stop();
+  });
+
+  it("blocks dragging the page while the keyboard is up, except in the menu", () => {
+    const { move, drag } = setUp(660);
+    const stop = trackVisibleArea();
+    expect(drag().defaultPrevented).toBe(false);
+    move({ height: 340 });
+    expect(drag().defaultPrevented).toBe(true);
+    expect(drag(new FakeElement("P", "", true)).defaultPrevented).toBe(false);
     stop();
   });
 
