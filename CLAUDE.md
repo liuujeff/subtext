@@ -40,7 +40,7 @@ pipeline that builds all the word data. Answers never reach the browser.
 - Accounts are built but **switched off for now** (`SIGN_IN_ENABLED` in `Account.tsx` and
   `[auth.external.google]` in `supabase/config.toml`; the API routes stay). Without one, progress is tied to the browser by a cookie; "Sign in with
   Google" (in the menu drawer) keeps it across devices and moves the browser's progress into the
-  account. "How to play" (menu, top left) opens on a player's first visit.
+  account. The menu (top left) opens on a player's first visit with "How to play" expanded.
 - **Streaks and stats** (drawer, and the streak on the day summary): a day counts once all five
   daily rounds are finished (3 guesses, a rank-1 hit, or the clock ran out) and were started on
   that puzzle's own New York day, so replaying a past day doesn't extend a streak. The streak
@@ -228,7 +228,9 @@ All responses are JSON; errors are `{ error, ... }`.
   torpedo rack (`CLOCK_BOX` keeps labels off it): 1:00 before the start, red under 10 s,
   hidden once guesses end the round. Before the start a wide Start button takes the guess
   form's place and the pair shows "?"; screen readers hear "30 / 10 seconds left".
-- "How to play" is a drawer (`HowToPlay.tsx`, a picture of the scope in `HowDiagram.tsx`, no step list). Random mode
+- The menu is a drawer (`Menu.tsx`) of sections, where the archive and account options will
+  go. "How to play" is a collapsible one (a picture of the scope in `HowDiagram.tsx`, no step
+  list): expanded on a player's first visit, collapsed every time after. Random mode
   puts "Back to today" in the header.
 
 ## Rules for working on this repo
@@ -274,7 +276,7 @@ All responses are JSON; errors are `{ error, ... }`.
 - `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,account/link}`.
 - `src/components/` – `Game.tsx` (state and flow), `GuessMap.tsx` (sonar, torpedoes, day
   readout), `map-layout.ts` (scope geometry, label placement), `RoundPanels.tsx` (round bars,
-  reveal, summary), `HowToPlay.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
+  reveal, summary), `Menu.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
 - `src/lib/game/` – shared: `rules.ts`, `day.ts`, `stats.ts`, `types.ts`, `api-client.ts`.
 - `src/lib/theme.ts` – theme storage key and the pre-paint script (shared by the layout and
   `ThemePicker.tsx`).

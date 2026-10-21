@@ -8,12 +8,14 @@ import { ThemePicker } from "./ThemePicker";
 const SEEN_KEY = "subtext-seen-how-to-play";
 
 /**
- * The menu button (top left) and the "How to play" drawer it opens, with the
- * player's account and stats. The drawer opens by itself on a player's first
- * visit. `onAccountChange` runs when signing in or out changed whose rounds
- * the page should show.
+ * The menu button (top left) and the drawer it opens: how to play, play
+ * buttons, the player's account and stats, appearance. This is where the
+ * archive and account options will go too. "How to play" is a section that
+ * opens expanded on a player's first visit (the drawer opens by itself then)
+ * and collapsed after that. `onAccountChange` runs when signing in or out
+ * changed whose rounds the page should show.
  */
-export function HowToPlay({
+export function Menu({
   onRandom,
   onAccountChange,
   children,
@@ -24,10 +26,12 @@ export function HowToPlay({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+  const [howOpen, setHowOpen] = useState(false);
   const close = () => dialog.current?.close();
-  const show = () => {
+  const show = (expandHow: boolean) => {
     dialog.current?.showModal();
     setOpen(true);
+    setHowOpen(expandHow);
   };
 
   useEffect(() => {
@@ -36,7 +40,7 @@ export function HowToPlay({
     } catch {
       return; // no storage (private mode, previews): don't pop up every visit
     }
-    if (!dialog.current?.open) show();
+    if (!dialog.current?.open) show(true);
   }, []);
 
   // Marked seen once closed, so a reload before then shows it again.
@@ -52,9 +56,9 @@ export function HowToPlay({
       <button
         type="button"
         className="menu-button"
-        aria-label="How to play"
+        aria-label="Menu"
         aria-haspopup="dialog"
-        onClick={show}
+        onClick={() => show(false)}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -70,13 +74,16 @@ export function HowToPlay({
       >
         <div className="menu-body">
           <div className="menu-head">
-            <h2 id="menu-title">How to play</h2>
+            <h2 id="menu-title">Menu</h2>
             <button type="button" className="ghost close" aria-label="Close" onClick={close}>
               ×
             </button>
           </div>
-          <p className="lede">Find one word that sits between two others in meaning.</p>
-          {children}
+          <details className="section" open={howOpen} onToggle={(e) => setHowOpen(e.currentTarget.open)}>
+            <summary>How to play</summary>
+            <p className="lede">Find one word that sits between two others in meaning.</p>
+            {children}
+          </details>
           <div className="row">
             <button type="button" onClick={close}>
               Play today’s pairs

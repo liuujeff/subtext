@@ -190,6 +190,15 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 .how figcaption{margin-top:10px;color:var(--soft)}
 .how em{color:var(--ink);font-style:normal;font-weight:700}
 .menu .lede{margin:0 0 12px;color:var(--ink)}
+/* A collapsible menu section: "How to play" now, archive and account later. */
+.section{border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-top:10px}
+.section summary{display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;
+  list-style:none;font:700 .95rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--glow)}
+.section summary::-webkit-details-marker{display:none}
+.section summary::after{content:"+";font-size:1.2rem;line-height:1}
+.section[open] summary::after{content:"−"}
+.section summary:focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
+.section[open]{padding-bottom:14px}
 .menu .row{margin-top:16px}
 .menu .close{width:40px;height:40px;padding:0;font-size:1.5rem;line-height:1;border:0;margin-right:-8px}
 /* System / Light / Dark: radio buttons drawn as one segmented control. */

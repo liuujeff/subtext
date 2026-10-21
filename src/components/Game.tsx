@@ -30,8 +30,8 @@ import type { PuzzleRound, TopAnswer } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
 
 import { GuessMap, SummaryMap } from "./GuessMap";
-import { HowToPlay } from "./HowToPlay";
 import { bearing, LANDING } from "./map-layout";
+import { Menu } from "./Menu";
 import { DaySummary, RevealPanel, RoundBars } from "./RoundPanels";
 import { SoundToggle } from "./SoundToggle";
 
@@ -378,7 +378,7 @@ export function Game({ children }: { children: ReactNode }) {
   return (
     <main className="game" style={{ "--land": `${LANDING}s` } as CSSProperties}>
       <header className="top">
-        <HowToPlay onRandom={() => void startRandom()} onAccountChange={reloadToday}>{children}</HowToPlay>
+        <Menu onRandom={() => void startRandom()} onAccountChange={reloadToday}>{children}</Menu>
         <h1>Subtext</h1>
         {view.mode === "random" ? (
           <button type="button" className="ghost back" onClick={backToDaily}>
