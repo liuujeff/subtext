@@ -117,7 +117,6 @@ export function Account({
       ) : (
         <p>{failed ? "Couldn’t load your stats." : "Loading…"}</p>
       )}
-      <p className="note">A streak counts days when you finished all five pairs.</p>
       {!SIGN_IN_ENABLED ? null : user ? (
         <div className="who">
           <span>Signed in{user.email ? ` as ${user.email}` : ""}</span>
