@@ -39,6 +39,8 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:inherit}
+/* No rubber-banding: the game is pinned, there is nothing to scroll. */
+html,body{overscroll-behavior:none}
 body{margin:0;color:var(--ink);
   background:radial-gradient(120% 60% at 50% 0%,var(--wash) 0%,transparent 70%) no-repeat var(--paper);
   font:400 17px/1.5 var(--font-body),system-ui,-apple-system,"Segoe UI",sans-serif;}
