@@ -11,10 +11,13 @@
 // Two iOS habits need heading off:
 // - Safari slides the whole page up when a field it's about to cover gains
 //   focus (blank space shows below the page), before the viewport reports
-//   the keyboard. So the moment the player touches a text field, the game is
+//   the keyboard. So when a field the player touched takes focus, the game is
 //   fitted to the keyboard height seen last time (or a guess); the field is
 //   then already above the keyboard and Safari has nothing to slide. The real
-//   size replaces the guess once the keyboard reports it.
+//   size replaces the guess once the keyboard reports it. Not on the touch
+//   itself: moving the field from under the finger before the tap ends sends
+//   the tap elsewhere, and the field never gets focus (no keyboard). Not on
+//   focus set from code either: that opens no keyboard on iOS.
 // - With the keyboard up, iOS lets the page be dragged around. The game fits
 //   the visible area and has nothing to scroll, so drags are blocked then.
 
@@ -24,9 +27,11 @@ const KEYBOARD_PX = 100;
 // No keyboard seen yet: phone keyboards (with their suggestion bar) take
 // about this share of the screen.
 const GUESS_SHARE = 0.4;
-// A touch that brings up no keyboard (a hardware keyboard, a cancelled tap):
-// let go of the guess if the viewport still hasn't shrunk by then.
+// Focus that brings up no keyboard (a hardware keyboard): let go of the guess
+// if the viewport still hasn't shrunk by then.
 const NO_KEYBOARD_MS = 800;
+// Focus this soon after a touch on the same field came from that touch.
+const TOUCH_FOCUS_MS = 1000;
 const STORE_KEY = "subtext-keyboard";
 
 function storedKeyboard(): number {
@@ -50,6 +55,7 @@ export function trackVisibleArea(): () => void {
   let keyboard = storedKeyboard();
   let frame = 0;
   let waiting: number | undefined; // a guess is up, waiting for the keyboard
+  let touched: { target: EventTarget | null; at: number } = { target: null, at: 0 };
 
   const set = (height: number, top: number) => {
     root.dataset.keyboard = "";
@@ -88,7 +94,11 @@ export function trackVisibleArea(): () => void {
   };
 
   const onPointerDown = (e: PointerEvent) => {
-    if (!touch || !isTextField(e.target) || keyboardUp()) return;
+    touched = { target: e.target, at: Date.now() };
+  };
+  const onFocusIn = (e: FocusEvent) => {
+    const fromTouch = touched.target === e.target && Date.now() - touched.at < TOUCH_FOCUS_MS;
+    if (!touch || !fromTouch || !isTextField(e.target) || keyboardUp()) return;
     set(window.innerHeight - (keyboard || window.screen.height * GUESS_SHARE), 0);
     window.clearTimeout(waiting);
     waiting = window.setTimeout(() => {
@@ -108,11 +118,13 @@ export function trackVisibleArea(): () => void {
   vv.addEventListener("resize", schedule);
   vv.addEventListener("scroll", schedule);
   document.addEventListener("pointerdown", onPointerDown, true);
+  document.addEventListener("focusin", onFocusIn);
   document.addEventListener("touchmove", onTouchMove, { passive: false });
   return () => {
     vv.removeEventListener("resize", schedule);
     vv.removeEventListener("scroll", schedule);
     document.removeEventListener("pointerdown", onPointerDown, true);
+    document.removeEventListener("focusin", onFocusIn);
     document.removeEventListener("touchmove", onTouchMove);
     cancelAnimationFrame(frame);
     window.clearTimeout(waiting);

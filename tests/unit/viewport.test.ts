@@ -57,10 +57,18 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
     doc.dispatchEvent(e);
     return e;
   };
-  const tap = (el = new FakeElement("INPUT", "text")) => dispatch("pointerdown", el);
+  const field = new FakeElement("INPUT", "text");
+  // A finger down on `el`, then (unless the tap went elsewhere) focus on it.
+  const tap = (el = field, focuses = true) => {
+    dispatch("pointerdown", el);
+    const sizeBeforeFocus = props.get("--visible-height") ?? null;
+    if (focuses) dispatch("focusin", el);
+    return sizeBeforeFocus;
+  };
+  const focusFromCode = (el = field) => dispatch("focusin", el);
   const drag = (el = new FakeElement("DIV")) => dispatch("touchmove", el);
   const height = () => props.get("--visible-height") ?? null;
-  return { props, dataset, storage, move, tap, drag, height };
+  return { props, dataset, storage, move, tap, focusFromCode, drag, height };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -86,10 +94,10 @@ describe("trackVisibleArea", () => {
     stop();
   });
 
-  it("fits a touched field straight away, before the keyboard reports its size", () => {
+  it("fits a touched field once it has focus, before the keyboard reports its size", () => {
     const { move, tap, height, storage } = setUp(660);
     const stop = trackVisibleArea();
-    tap();
+    expect(tap()).toBeNull(); // nothing moves under the finger before the tap lands
     expect(height()).toBe(`${660 - 700 * 0.4}px`); // first time: 40% of the screen
     move({ height: 350 });
     expect(height()).toBe("350px");
@@ -100,10 +108,14 @@ describe("trackVisibleArea", () => {
     stop();
   });
 
-  it("lets go of the guess if no keyboard comes up, and ignores other taps", () => {
-    const { props, tap } = setUp(660, { stored: "300" });
+  it("lets go of the guess if no keyboard comes up, and ignores other focus", () => {
+    const { props, tap, focusFromCode } = setUp(660, { stored: "300" });
     const stop = trackVisibleArea();
     tap(new FakeElement("BUTTON"));
+    expect(props.size).toBe(0);
+    focusFromCode(); // no touch: no keyboard on iOS
+    expect(props.size).toBe(0);
+    tap(undefined, false); // the tap didn't focus the field
     expect(props.size).toBe(0);
     tap();
     expect(props.get("--visible-height")).toBe("360px");
