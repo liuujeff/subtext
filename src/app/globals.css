@@ -1,0 +1,218 @@
+/* Sonar console in two palettes: a light "day watch" chart, and phosphor
+   green on near-black. The device's setting picks one unless the player chose
+   in the menu, which sets data-theme on <html> (ThemePicker.tsx, and the
+   script in layout.tsx before first paint). Laid out to fit one screen: the
+   map keeps its shape and shrinks when the rest needs room. Font stacks use
+   the next/font variables set on <html> in layout.tsx. */
+:root{
+  --paper:#E9F1EC; --sheet:#F7FBF8; --grid:#D3E3D8; --line:#9DBFA9; --wash:#D6E9DC;
+  --glow:#087A40; --on-glow:#FFFFFF; --ink:#0E2A1B; --soft:#4D6E5B;
+  --a:#0B7C8A; --b:#A85F00; --target:#D12F45;
+  --shine:rgb(8 122 64 / .18); --shine-soft:rgb(8 122 64 / .05); --ring:rgb(8 122 64 / .18);
+  --button-shine:rgb(8 122 64 / .2); --a-shine:transparent; --b-shine:transparent;
+  --scan:rgb(14 42 27 / .03); --shadow:rgb(14 42 27 / .3);
+  --mono:var(--font-mono),ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#020806; --sheet:#04120B; --grid:#0F3A22; --line:#1D6A3F; --wash:#06210F;
+    --glow:#3DFF8B; --on-glow:#020806; --ink:#CFF7DC; --soft:#6FAE88;
+    --a:#59E3F0; --b:#FFB84D; --target:#FF5C6C;
+    --shine:rgb(61 255 139 / .45); --shine-soft:rgb(61 255 139 / .06); --ring:rgb(61 255 139 / .15);
+    --button-shine:rgb(61 255 139 / .25); --a-shine:rgb(89 227 240 / .35); --b-shine:rgb(255 184 77 / .35);
+    --scan:rgb(0 0 0 / .14); --shadow:rgb(0 0 0 / .6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#020806; --sheet:#04120B; --grid:#0F3A22; --line:#1D6A3F; --wash:#06210F;
+  --glow:#3DFF8B; --on-glow:#020806; --ink:#CFF7DC; --soft:#6FAE88;
+  --a:#59E3F0; --b:#FFB84D; --target:#FF5C6C;
+  --shine:rgb(61 255 139 / .45); --shine-soft:rgb(61 255 139 / .06); --ring:rgb(61 255 139 / .15);
+  --button-shine:rgb(61 255 139 / .25); --a-shine:rgb(89 227 240 / .35); --b-shine:rgb(255 184 77 / .35);
+  --scan:rgb(0 0 0 / .14); --shadow:rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;color:var(--ink);
+  background:radial-gradient(120% 60% at 50% 0%,var(--wash) 0%,transparent 70%) no-repeat var(--paper);
+  font:400 17px/1.5 var(--font-body),system-ui,-apple-system,"Segoe UI",sans-serif;}
+h1,h2,h3{font-family:var(--mono)}
+
+main.game{max-width:520px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;
+  padding:max(10px,env(safe-area-inset-top)) 16px max(12px,env(safe-area-inset-bottom))}
+header.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+h1{font-size:1.55rem;line-height:1;margin:0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--glow);text-shadow:0 0 12px var(--shine)}
+.day{font-family:var(--mono);color:var(--soft);font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;
+  white-space:nowrap;margin-left:auto}
+.menu-button,.sound-button{display:grid;place-items:center;width:40px;height:40px;padding:0;
+  background:transparent;color:var(--ink);border-radius:10px;box-shadow:none}
+.menu-button{margin-left:-8px}
+.sound-button{margin-right:-8px}
+.sound-button[aria-pressed="false"]{color:var(--soft)}
+.menu-button:hover,.sound-button:hover{background:var(--sheet)}
+button.back{margin-left:auto;padding:6px 12px;font-size:.8rem}
+.rounds{display:flex;gap:6px;margin:0 0 8px;flex:none}
+.rounds span{flex:1;height:4px;border-radius:2px;background:var(--grid)}
+.rounds span.done{background:var(--line)}
+.rounds span.now{background:var(--glow);box-shadow:0 0 8px var(--shine)}
+
+/* The scope's panel, with faint scanlines over it. */
+.map{background:var(--sheet);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;
+  flex:0 1 auto;min-height:190px;display:flex;flex-direction:column;
+  box-shadow:inset 0 0 40px var(--shine-soft),0 0 24px var(--shine-soft)}
+.map::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,var(--scan) 0 1px,transparent 1px 3px)}
+.map svg{display:block;flex:0 1 auto;min-height:0;width:100%;height:auto;aspect-ratio:340/250}
+.map svg text{font-family:var(--mono)}
+.map svg .pts{font-weight:800;font-size:13px}
+/* The round's clock, top right; red for the last 10 seconds. */
+.clock text{fill:var(--glow)}
+.clock .clock-track{fill:var(--grid)}
+.clock .clock-fill{fill:var(--glow)}
+.clock.low text,.clock.low .clock-fill{fill:var(--target)}
+.ring{fill:none;stroke:var(--grid);stroke-width:1}
+.tick{stroke:var(--line);stroke-width:1}
+.rim{fill:none;stroke:var(--line);stroke-width:1.5}
+.baseline{stroke:var(--line);stroke-width:1.5}
+.deadzone{fill:var(--sheet);opacity:.6}
+.range{fill:var(--soft);opacity:.7}
+.sweep{animation:sweep 6s linear infinite}
+@keyframes sweep{to{transform:rotate(1turn)}}
+.tube{fill:none;stroke:var(--line);stroke-width:1}
+.torpedo{fill:var(--glow);transition:transform .35s cubic-bezier(.55,0,1,.45),opacity .35s ease-in}
+.torpedo .band{fill:var(--sheet)}
+.torpedo.fired{transform:translateX(30px);opacity:0}
+.torpedo.armed{animation:arm .45s ease-in-out infinite alternate}
+@keyframes arm{to{opacity:.35}}
+/* A guess lands: the blip drops in and pings, then its label fades up. */
+.spot{transform-box:fill-box;transform-origin:center;animation:land .3s ease-out both}
+.ping{fill:none;stroke:var(--glow);stroke-width:1.2;vector-effect:non-scaling-stroke;opacity:0;
+  transform-box:fill-box;transform-origin:center;animation:ping 1.4s ease-out .1s forwards}
+.tag{animation:fade-in .25s ease-out .15s both}
+@keyframes land{from{transform:scale(2.2);opacity:0}}
+@keyframes ping{from{transform:scale(1);opacity:.9}to{transform:scale(6);opacity:0}}
+@keyframes fade-in{from{opacity:0}}
+@keyframes fade-out{to{opacity:0}}
+/* The guess just scored: its torpedo leaves the tube and runs out to the blip,
+   which lands at --land (LANDING in map-layout.ts, set on main.game). Until
+   then nothing gives the spot away, and a round-ending shot's reveal waits too. */
+.run{--leave:.1s;--run:calc(var(--land) - var(--leave));--speed:cubic-bezier(.45,0,.9,.6)}
+.wake{stroke:var(--glow);stroke-width:1.2;stroke-dasharray:1 1;opacity:.5;
+  animation:wake var(--run) var(--speed) var(--leave) both,fade-out .6s ease-out var(--land) forwards}
+@keyframes wake{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.head{fill:var(--glow);animation:run var(--run) var(--speed) var(--leave) both,run-show var(--run) linear var(--leave) both}
+@keyframes run{from{transform:translate(var(--dx),var(--dy))}}
+@keyframes run-show{0%,100%{opacity:0}12%,92%{opacity:1}}
+.incoming .spot{animation-delay:var(--land)}
+.incoming .ping{animation-delay:calc(var(--land) + .1s)}
+.tag.incoming{animation-delay:calc(var(--land) + .15s)}
+.bearings.incoming{animation:fade-in .3s ease-out var(--land) both}
+.map:has(.incoming) ~ .reveal{animation:fade-in .3s ease-out var(--land) both}
+/* A rank-1 hit: the crosshair flashes, rings ripple out, the contacts jolt in. */
+.ripples circle{fill:none;stroke:var(--target);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:0;
+  transform-box:fill-box;transform-origin:center;animation:ripple 1.3s ease-out var(--land) forwards}
+.ripples circle:nth-child(2){animation-delay:calc(var(--land) + .18s)}
+.ripples circle:nth-child(3){animation-delay:calc(var(--land) + .36s)}
+@keyframes ripple{from{transform:scale(.06);opacity:.9}to{transform:scale(1);opacity:0}}
+.crosshair{transform-box:fill-box;transform-origin:center}
+.crosshair.locked{animation:lock-on .6s ease-out var(--land) both}
+@keyframes lock-on{25%{transform:scale(1.8)}55%{transform:scale(.9)}}
+.contact{--in:9px}
+.contact-b{--in:-9px}
+.contact.pulled{animation:pull .7s ease-out var(--land) both}
+@keyframes pull{30%{transform:translateX(var(--in))}65%{transform:translateX(calc(var(--in) * -.25))}}
+
+.pair{display:flex;justify-content:space-between;align-items:flex-end;padding:12px 16px 0;gap:10px}
+.pair .w{font-family:var(--mono);font-weight:800;font-size:1.35rem;line-height:1.05;letter-spacing:.04em;
+  text-transform:uppercase;min-width:0;overflow-wrap:anywhere}
+.pair .wa{color:var(--a);text-shadow:0 0 10px var(--a-shine)}
+.pair .wb{color:var(--b);text-align:right;text-shadow:0 0 10px var(--b-shine)}
+.pair .and{font-family:var(--mono);color:var(--soft);font-size:.8rem;padding-bottom:3px}
+
+form{display:flex;gap:8px;margin:10px 0 4px;flex:none}
+/* Before a round starts, one wide button where the guess form goes, as tall as it. */
+.start{display:flex;margin:10px 0 4px;flex:none}
+.start button{flex:1;padding-block:12px}
+input{flex:1;min-width:0;font:500 1.05rem var(--mono);padding:10px 14px;border-radius:10px;
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);caret-color:var(--glow)}
+input::placeholder{color:var(--soft);opacity:.8}
+input:focus{outline:none;border-color:var(--glow);box-shadow:0 0 0 3px var(--ring)}
+button{font:700 .95rem var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;
+  border-radius:10px;border:0;background:var(--glow);color:var(--on-glow);cursor:pointer;
+  box-shadow:0 0 16px var(--button-shine)}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+button:focus-visible{outline:2px solid var(--glow);outline-offset:3px}
+button:disabled{opacity:.4;cursor:default}
+.msg{min-height:1.5em;font-size:.95rem;color:var(--soft);margin:0 0 2px;flex:none}
+.msg.err{color:var(--target)}
+.msg .suggest{display:inline;padding:0;background:none;border:0;border-radius:0;color:inherit;box-shadow:none;
+  font:inherit;font-weight:700;letter-spacing:0;text-transform:none;text-decoration:underline;text-underline-offset:2px}
+
+.reveal{margin:10px 0 6px;padding:10px 14px;border-radius:14px;flex:none;
+  background:var(--sheet);border:1px solid var(--line)}
+.reveal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.reveal h2{margin:0;font-size:1.05rem}
+.reveal-head button{padding:8px 14px;white-space:nowrap}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.summary{margin-top:10px;flex:none;position:relative}
+.summary .total{font-family:var(--mono);font-weight:800;font-size:2.4rem;line-height:1;
+  color:var(--glow);text-shadow:0 0 14px var(--shine)}
+.summary .of{font-family:var(--mono);color:var(--soft)}
+.summary p{margin:6px 0}
+.summary .row button{padding:10px 14px;font-size:.9rem;letter-spacing:.04em}
+.summary textarea.unseen{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+textarea{width:100%;font:.9rem var(--mono);border-radius:10px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink);padding:8px 10px;margin:4px 0 8px;resize:none}
+
+/* "How to play" drawer, from the menu button. */
+dialog.menu{margin:0;padding:0;border:0;border-right:1px solid var(--line);width:min(420px,88vw);
+  height:100dvh;max-height:none;background:var(--sheet);color:var(--ink);box-shadow:0 0 40px var(--shadow)}
+dialog.menu::backdrop{background:var(--shadow)}
+dialog.menu[open]{animation:slide-in .18s ease-out}
+@keyframes slide-in{from{transform:translateX(-100%)}}
+.menu-body{height:100%;overflow-y:auto;padding:max(14px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
+.menu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.menu h2{font-size:1.3rem;margin:0;color:var(--glow)}
+.menu p{color:var(--soft);margin:.5em 0}
+.rules{margin:0;padding-left:1.1em;color:var(--soft)}
+.rules li{margin:.45em 0}
+.rules strong{color:var(--ink)}
+.menu .lede{margin:0 0 12px;color:var(--ink)}
+.menu .row{margin-top:16px}
+.menu .close{width:40px;height:40px;padding:0;font-size:1.5rem;line-height:1;border:0;margin-right:-8px}
+/* System / Light / Dark: radio buttons drawn as one segmented control. */
+.theme{display:flex;gap:6px;margin:22px 0 0;padding:0;border:0}
+.theme legend{padding:0;margin-bottom:6px;color:var(--soft);font-size:.9rem}
+.theme label{position:relative;flex:1;text-align:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;
+  font:700 .8rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--soft);cursor:pointer}
+.theme input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.theme label:has(input:checked){background:var(--glow);border-color:var(--glow);color:var(--on-glow)}
+.theme label:has(input:focus-visible){outline:2px solid var(--glow);outline-offset:2px}
+
+/* Short screens (small phones with browser bars): tighten so the tallest
+   state, three guesses plus the reveal, still fits. */
+@media (max-height:640px){
+  h1{font-size:1.35rem}
+  header.top{margin-bottom:6px}
+  .pair{padding-top:8px}
+  .pair .w{font-size:1.2rem}
+  .map{min-height:150px}
+  form,.start{margin:8px 0 2px}
+  input,form button{padding-top:8px;padding-bottom:8px}
+  .start button{padding-block:10px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .torpedo{transition:none}
+  .sweep,.spot,.tag,dialog.menu[open]{animation:none}
+  .torpedo.armed,.bearings.incoming,.crosshair.locked,.contact.pulled,.map:has(.incoming) ~ .reveal{animation:none}
+  .ping,.run,.ripples{display:none}
+}
+.hidden{display:none}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;border:0}
