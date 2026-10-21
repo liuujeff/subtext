@@ -219,7 +219,6 @@ dialog.menu[open]{animation:slide-in .18s ease-out}
 .stats div{border:1px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center}
 .stats dt{font-size:.7rem;color:var(--soft);line-height:1.2;min-height:2.4em}
 .stats dd{margin:2px 0 0;font:800 1.4rem var(--mono);color:var(--glow)}
-.account .note{font-size:.8rem}
 .account .who{display:flex;flex-direction:column;gap:8px;align-items:flex-start;margin-top:12px;color:var(--soft)}
 
 /* Short screens (small phones with browser bars): tighten so the tallest
