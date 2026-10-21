@@ -214,16 +214,16 @@ export function Game({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [running]);
 
-  async function startRound() {
-    if (!round || started || pending) return;
+  async function startRound(target: Round | null = round) {
+    if (!target || target.a !== null || pending) return;
     setPending(true);
     setMessage(null);
     try {
-      const { a, b, msLeft } = await api.start(round.puzzleId);
+      const { a, b, msLeft } = await api.start(target.puzzleId);
       const t = performance.now();
       setNow(t);
-      updateRound(round.puzzleId, (r) => ({ ...r, a, b, deadline: t + msLeft }));
-      reveal(round.puzzleId, Math.max(0, msLeft + REVEAL_AFTER_MS));
+      updateRound(target.puzzleId, (r) => ({ ...r, a, b, deadline: t + msLeft }));
+      reveal(target.puzzleId, Math.max(0, msLeft + REVEAL_AFTER_MS));
       wantFocus.current = true;
     } catch {
       setMessage({ text: "Couldn’t start the round. Try again.", error: true });
@@ -232,7 +232,8 @@ export function Game({ children }: { children: ReactNode }) {
     }
   }
 
-  async function startRandom(exclude?: number) {
+  // `autoStart` starts the pair's clock straight away (after "Next pair").
+  async function startRandom(exclude?: number, autoStart = false) {
     setPending(true);
     setMessage(null);
     try {
@@ -244,6 +245,10 @@ export function Game({ children }: { children: ReactNode }) {
       setInput("");
       revealWhenOver(next, t);
       wantFocus.current = true;
+      if (autoStart && next.a === null) {
+        setPending(false);
+        await startRound(next);
+      }
     } catch {
       setMessage({ text: "Couldn’t load a random pair. Try again.", error: true });
     } finally {
@@ -263,10 +268,12 @@ export function Game({ children }: { children: ReactNode }) {
   function next() {
     setMessage(null);
     if (view.mode === "daily") {
+      const upcoming = daily.status === "ready" ? (daily.rounds[view.round + 1] ?? null) : null;
       setView({ mode: "daily", round: view.round + 1 });
       wantFocus.current = true;
+      void startRound(upcoming);
     } else {
-      void startRandom(view.round.puzzleId);
+      void startRandom(view.round.puzzleId, true);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
