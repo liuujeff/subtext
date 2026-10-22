@@ -221,9 +221,13 @@ All responses are JSON; errors are `{ error, ... }`.
   `--visible-height` and `--visible-top` on `<html>` from the visual viewport; the stage
   then takes the visible height and the map gives up what it must (never grows), with its
   SVG at its normal size, so the scope is cropped from the bottom (the empty part below the
-  clues first) instead of shrinking. The keyboard is measured against
-  `document.documentElement.clientHeight`, not `innerHeight`: iOS 27 Safari shrinks
-  `innerHeight` by however far it scrolls the page, which hid the keyboard entirely. The `.dock` (guess bar + status line) sits right under it, just
+  clues first) instead of shrinking; the rest of the column tightens its spacing then, so
+  the clues, crosshair and ring numbers stay in view. A keyboard counts only while a text
+  field has focus, measured against the smaller of `document.documentElement.clientHeight`
+  and `innerHeight + scrollY`: iOS 27 Safari shrinks `innerHeight` by however far it
+  scrolls the page (which hid the keyboard entirely), and Chrome on iOS can lay the page out
+  taller than it shows (the crop never let go after the keyboard closed). A second after a
+  blur it checks again, in case no viewport event comes. The `.dock` (guess bar + status line) sits right under it, just
   above the keyboard. `html`/`body` don't scroll at all (iOS would scroll the document by
   the keyboard's height). Safari slides the page up when a field it's about to cover gains
   focus (blank space, then a snap), before the viewport reports the keyboard, so when a

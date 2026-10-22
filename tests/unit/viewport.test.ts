@@ -19,7 +19,9 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
   const vv = Object.assign(new EventTarget(), { height: innerHeight, offsetTop: 0, scale: 1 });
   const props = new Map<string, string>();
   const dataset: Record<string, string> = {};
+  const field = new FakeElement("INPUT", "text");
   const doc = Object.assign(new EventTarget(), {
+    activeElement: field as FakeElement | null, // the guess field has focus unless a test moves it
     documentElement: {
       clientHeight: innerHeight,
       dataset,
@@ -30,14 +32,16 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
     },
   });
   const storage = new Map<string, string>(stored ? [["subtext-keyboard", stored]] : []);
-  vi.stubGlobal("window", {
+  const win = Object.assign(new EventTarget(), {
     innerHeight,
+    scrollY: 0,
     visualViewport: vv,
     screen: { height: 700 },
     matchMedia: () => ({ matches: touch }),
     setTimeout,
     clearTimeout,
   });
+  vi.stubGlobal("window", win);
   vi.stubGlobal("document", doc);
   vi.stubGlobal("HTMLElement", FakeElement);
   vi.stubGlobal("Element", FakeElement);
@@ -51,12 +55,12 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
     vv.dispatchEvent(new Event("resize"));
   };
   const dispatch = (type: string, target: FakeElement) => {
+    if (type === "focusin") doc.activeElement = target;
     const e = new Event(type, { cancelable: true });
     Object.defineProperty(e, "target", { value: target });
     doc.dispatchEvent(e);
     return e;
   };
-  const field = new FakeElement("INPUT", "text");
   // A finger down on `el`, then (unless the tap went elsewhere) focus on it.
   const tap = (el = field, focuses = true) => {
     dispatch("pointerdown", el);
@@ -67,7 +71,12 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
   const focusFromCode = (el = field) => dispatch("focusin", el);
   const drag = (el = new FakeElement("DIV")) => dispatch("touchmove", el);
   const height = () => props.get("--visible-height") ?? null;
-  return { props, dataset, storage, move, tap, focusFromCode, drag, height };
+  // The field loses focus (Done, a tap elsewhere, the round ending).
+  const blur = () => {
+    doc.activeElement = null;
+    doc.dispatchEvent(new Event("focusout"));
+  };
+  return { props, dataset, storage, move, tap, focusFromCode, drag, height, blur, win };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -135,12 +144,29 @@ describe("trackVisibleArea", () => {
   });
 
   it("measures the keyboard against the page, not innerHeight", () => {
-    const { dataset, move } = setUp(714);
+    const { dataset, move, win } = setUp(714);
     const stop = trackVisibleArea();
     // iOS 27: innerHeight drops by the scroll, leaving 98px "covered".
-    Object.assign(window, { innerHeight: 509 });
+    Object.assign(win, { innerHeight: 509, scrollY: 205 });
     move({ height: 411, offsetTop: 205 });
     expect("keyboard" in dataset).toBe(true);
+    stop();
+  });
+
+  it("lets go once the field loses focus, even if the page stays taller than it shows", () => {
+    const { dataset, move, blur, win } = setUp(714);
+    const stop = trackVisibleArea();
+    move({ height: 411 });
+    expect("keyboard" in dataset).toBe(true);
+    // Chrome on iOS: the keyboard goes, but the visible area stays short of
+    // the root's height (its toolbars) and no viewport event comes.
+    Object.assign(win, { innerHeight: 600 });
+    Object.assign(window.visualViewport!, { height: 600 });
+    blur();
+    vi.advanceTimersByTime(999);
+    expect("keyboard" in dataset).toBe(true); // Safari is still moving back
+    vi.advanceTimersByTime(1);
+    expect("keyboard" in dataset).toBe(false);
     stop();
   });
 

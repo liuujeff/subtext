@@ -8,10 +8,12 @@
 // the scope (the empty part below the clues goes first) rather than scaling
 // it, so the drawing never jumps.
 //
-// The keyboard is measured against the root element's height, which stays
-// put: iOS 27 Safari shrinks window.innerHeight by however far it scrolls the
-// page for the keyboard, so innerHeight minus the visible height can come out
-// well short of the keyboard.
+// A keyboard is only up while a text field has focus, and is measured against
+// the page's height: the smaller of the root element's height and innerHeight
+// plus the scroll. iOS 27 Safari shrinks innerHeight by however far it scrolls
+// the page for the keyboard (innerHeight alone came out short of the
+// keyboard), and Chrome on iOS can lay the page out taller than it shows, so
+// the root's height alone never let go once the keyboard closed.
 //
 // Three iOS habits need heading off:
 // - Safari slides the whole page up when a field gains focus (blank space
@@ -42,6 +44,10 @@ const GUESS_SHARE = 0.35;
 const NO_KEYBOARD_MS = 800;
 // The keyboard has stopped moving once the viewport is this still.
 const SETTLE_MS = 150;
+// After a field loses focus, check again this much later in case the browser
+// reports nothing when its keyboard goes (and not sooner: Safari moves the
+// visual viewport back about half a second after the blur).
+const BLUR_CHECK_MS = 1000;
 // Focus this soon after a touch on the same field came from that touch.
 const TOUCH_FOCUS_MS = 1000;
 const STORE_KEY = "subtext-keyboard";
@@ -66,6 +72,7 @@ export function trackVisibleArea(): () => void {
   const touch = window.matchMedia?.("(pointer: coarse)").matches ?? false;
   let keyboard = storedKeyboard();
   let still: number | undefined; // the keyboard's height is remembered once it stops
+  let blurred: number | undefined; // a check after the field loses focus
   let waiting: number | undefined; // a guess is up, waiting for the keyboard
   let shown = 0; // the height the game is fitted to
   let touched: { target: EventTarget | null; at: number } = { target: null, at: 0 };
@@ -82,10 +89,12 @@ export function trackVisibleArea(): () => void {
     root.style.removeProperty("--visible-top");
   };
   // The page's own height, keyboard or not.
-  const full = () => root.clientHeight;
+  const full = () => Math.min(root.clientHeight, window.innerHeight + window.scrollY);
   const keyboardUp = () =>
+    isTextField(document.activeElement) &&
     // Pinch-zoom also shrinks the visual viewport; that isn't a keyboard.
-    Math.abs(vv.scale - 1) <= 0.01 && full() - vv.height >= KEYBOARD_PX;
+    Math.abs(vv.scale - 1) <= 0.01 &&
+    full() - vv.height >= KEYBOARD_PX;
 
   const settle = (ms: number) => {
     window.clearTimeout(waiting);
@@ -131,6 +140,11 @@ export function trackVisibleArea(): () => void {
     settle(NO_KEYBOARD_MS);
   };
 
+  const onFocusOut = () => {
+    window.clearTimeout(blurred);
+    blurred = window.setTimeout(update, BLUR_CHECK_MS);
+  };
+
   const onTouchMove = (e: TouchEvent) => {
     // The menu drawer scrolls on its own; nothing else should move.
     if ("keyboard" in root.dataset && !(e.target instanceof Element && e.target.closest("dialog"))) {
@@ -142,17 +156,22 @@ export function trackVisibleArea(): () => void {
   // Straight away, not on the next frame: the page mustn't be drawn shifted.
   vv.addEventListener("resize", update);
   vv.addEventListener("scroll", update);
+  window.addEventListener("resize", update);
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("focusin", onFocusIn);
+  document.addEventListener("focusout", onFocusOut);
   document.addEventListener("touchmove", onTouchMove, { passive: false });
   return () => {
     vv.removeEventListener("resize", update);
     vv.removeEventListener("scroll", update);
+    window.removeEventListener("resize", update);
     document.removeEventListener("pointerdown", onPointerDown, true);
     document.removeEventListener("focusin", onFocusIn);
+    document.removeEventListener("focusout", onFocusOut);
     document.removeEventListener("touchmove", onTouchMove);
     window.clearTimeout(waiting);
     window.clearTimeout(still);
+    window.clearTimeout(blurred);
     clear();
   };
 }
