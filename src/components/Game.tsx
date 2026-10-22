@@ -181,11 +181,16 @@ export function Game({ children }: { children: ReactNode }) {
   const reloadToday = () => void fetchToday().then(applyToday);
 
   // Focus the input (or the Start button) after a render that showed it (new
-  // round, round started, guess scored).
+  // round, round started, guess scored). Not the input on touch screens: focus
+  // from code opens no keyboard on iOS, and the player's tap on a field that
+  // already has focus isn't a focus, so the game couldn't make room for the
+  // keyboard before it slides up (see viewport.ts).
   useEffect(() => {
     if (!wantFocus.current) return;
     wantFocus.current = false;
-    (inputRef.current ?? startRef.current)?.focus({ preventScroll: true });
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    const input = touch ? null : inputRef.current;
+    (input ?? startRef.current)?.focus({ preventScroll: true });
   });
 
   const round: Round | null =
