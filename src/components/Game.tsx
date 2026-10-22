@@ -14,6 +14,7 @@ import {
 import { api, ApiError } from "@/lib/game/api-client";
 import { dayNumber } from "@/lib/game/day";
 import {
+  BETTER_WORD_MAX,
   bestGuess,
   bestPoints,
   GRACE_SECONDS,
@@ -27,7 +28,7 @@ import {
   WORD_PATTERN,
 } from "@/lib/game/rules";
 import type { Stats } from "@/lib/game/stats";
-import type { DistributionResponse, PuzzleRound } from "@/lib/game/types";
+import type { DistributionResponse, PuzzleRound, TopAnswer } from "@/lib/game/types";
 import { sfx } from "@/lib/sound";
 import { trackVisibleArea } from "@/lib/viewport";
 
@@ -39,7 +40,8 @@ import { SoundToggle } from "./SoundToggle";
 
 // `deadline`: when the round's clock runs out, on this page's performance.now()
 // clock (immune to the device's time being off); null until the round starts.
-type Round = PuzzleRound & { deadline: number | null };
+// `better`: a word that would have beaten a weak round (null: none), once fetched.
+type Round = PuzzleRound & { deadline: number | null; better?: TopAnswer | null };
 
 function withDeadline(r: PuzzleRound, now: number): Round {
   return { ...r, deadline: r.msLeft === null ? null : now + r.msLeft };
@@ -199,6 +201,34 @@ export function Game({ children }: { children: ReactNode }) {
   const timedOut = !!round && !isRoundOver(round.guesses) && timeUp(round, now);
   const over = round ? isRoundOver(round.guesses) || timedOut : false;
   const inSummary = view.mode === "daily" && daily.status === "ready" && view.round >= daily.rounds.length;
+
+  // A round that ended at BETTER_WORD_MAX or less gets a better word. The
+  // server has it once the round is over there: a timed-out one only after its
+  // grace period, so a refusal is retried for a while.
+  const betterFor =
+    round && over && round.better === undefined && bestPoints(round.guesses) <= BETTER_WORD_MAX
+      ? round.puzzleId
+      : null;
+  useEffect(() => {
+    if (betterFor === null) return;
+    let active = true;
+    let retry: number | undefined;
+    const attempt = (left: number) => {
+      api
+        .better(betterFor)
+        .then(({ better }) => active && updateRound(betterFor, (r) => ({ ...r, better })))
+        .catch((error) => {
+          if (active && error instanceof ApiError && error.code === "round_not_over" && left > 0) {
+            retry = window.setTimeout(() => attempt(left - 1), 1500);
+          }
+        });
+    };
+    attempt(Math.ceil((GRACE_SECONDS * 1000) / 1500) + 1);
+    return () => {
+      active = false;
+      window.clearTimeout(retry);
+    };
+  }, [betterFor, updateRound]);
   // The day's streak and everyone's totals, once the day's summary is up.
   const [stats, setStats] = useState<Stats | null>(null);
   const [distribution, setDistribution] = useState<DistributionResponse | null>(null);
@@ -471,6 +501,7 @@ export function Game({ children }: { children: ReactNode }) {
         {round && over && (
           <RevealPanel
             guesses={round.guesses}
+            better={round.better ?? null}
             nextLabel={view.mode === "random" ? "Another random pair" : isLastDaily ? "See today’s total" : "Next pair"}
             onNext={next}
           />

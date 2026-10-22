@@ -32,7 +32,9 @@ pipeline that builds all the word data. Answers never reach the browser.
   blip labelled with its word and points (no separate list): closer to the middle is more
   points, and swinging toward a side means it leans toward that clue. A torpedo rack in the
   top-left corner shows the guesses left; the button is "Fire".
-- **After a round**: your score. **After the day**: the total,
+- **After a round**: your score, and if it was 66 or less (`BETTER_WORD_MAX`), a better word
+  ("Better: cart · 72"): the weakest of the pair's top ten, never the best word.
+  **After the day**: the total,
   a stalk per pair (labelled with both words, the best guess and its score above, or "no
   guess"), a bell curve of everyone's totals today with a YOU marker and "Better than N% of
   today's players", and share text: the total, one emoji per
@@ -84,7 +86,8 @@ answers come only after the server confirms the round is over.
    hold under parallel requests. The response is `{ points, rank, lean, over }`.
 6. The best word is never shown: the client doesn't call `GET /api/reveal` any more (the route
    stays, locked until the round is over, and after a time-out until the grace period has
-   passed too, for whenever answers come back).
+   passed too, for whenever answers come back). After a weak round it calls
+   `GET /api/better` instead, locked the same way, which sends one word from the top ten.
 
 ### Scoring (identical in Python, Postgres and TypeScript)
 - Vectors are unit-normalized, so cosine = inner product.
@@ -190,6 +193,11 @@ All responses are JSON; errors are `{ error, ... }`.
   `not_started`, `round_over` (also when time is up), `not_found` (missing or future
   puzzle), `conflict`, `bad_request`, `rate_limited`. Past daily puzzles are playable.
 - `GET /api/reveal?puzzleId=` → `{ top: [{ word, points }] }`, else `round_not_over` (403).
+- `GET /api/better?puzzleId=` → `{ better: { word, points } | null }`: once the round is over
+  (as for the reveal; else `round_not_over`, 403) and only if the player's best was
+  `BETTER_WORD_MAX` (66) or less, the last of `top_answers` (rank ~10, never the first),
+  with points from `score_guess` now (stored `top_answers` points stay as they were for
+  played puzzles). The client retries a refusal through a time-out's grace period.
 - `GET /api/distribution` → `{ date, players, mean, sd, total, below }`: today's totals for
   everyone who finished the day, and this player's own total and how many others scored
   less (both null until they finish). `DayCurve.tsx` draws it as a normal curve with that
@@ -321,7 +329,7 @@ All responses are JSON; errors are `{ error, ... }`.
   `upload.py all` → `make_fixtures.py`.
 
 ## Layout
-- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,random,stats,distribution,account/link}`.
+- `src/app/` – `page.tsx`, `layout.tsx`, `globals.css`, `api/{today,start,guess,reveal,better,random,stats,distribution,account/link}`.
 - `src/components/` – `Game.tsx` (state and flow), `GuessMap.tsx` (sonar, torpedoes, day
   readout), `map-layout.ts` (scope geometry, label placement), `RoundPanels.tsx` (round bars,
   reveal, summary), `DayCurve.tsx` (everyone's totals), `Menu.tsx`, `HowDiagram.tsx`, `Account.tsx` (sign-in, stats), `ThemePicker.tsx`, `SoundToggle.tsx`.
@@ -348,7 +356,8 @@ All responses are JSON; errors are `{ error, ... }`.
   cookies, signed-in tokens, every guess error and suggestion, 3-guess and rank-1 endings,
   parallel guesses, future/past puzzles, reveal locking per player, random mode, the round
   clock (pairs hidden before the start, one start per round, the grace period, time-out
-  endings and reveals, by moving `started_at` back), and a scan of every response for leaks.
+  endings and reveals, by moving `started_at` back), the better word (locked, only after a
+  weak round, never the best word), and a scan of every response for leaks.
 - pgTAP (fixtures in 1990): RLS and privileges, `score_guess`, `suggest_words`, constraints.
 
 ## Status and known issues

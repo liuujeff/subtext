@@ -176,6 +176,8 @@ button:disabled{opacity:.4;cursor:default}
   background:var(--sheet);border:1px solid var(--line)}
 .reveal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .reveal h2{margin:0;font-size:1.05rem}
+.reveal .better{margin:2px 0 0;font-size:.85rem;color:var(--soft)}
+.reveal .better strong{font-family:var(--mono);color:var(--glow)}
 .reveal-head button{padding:8px 14px;white-space:nowrap}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 

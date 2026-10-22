@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 
 import { dayNumber } from "@/lib/game/day";
 import { bestPoints, shareSymbol } from "@/lib/game/rules";
-import type { DistributionResponse, Guess, PuzzleRound } from "@/lib/game/types";
+import type { DistributionResponse, Guess, PuzzleRound, TopAnswer } from "@/lib/game/types";
 
 import { DayCurve } from "./DayCurve";
 
@@ -20,13 +20,21 @@ export function RoundBars({ count, current }: { count: number; current: number }
 
 export function RevealPanel(props: {
   guesses: Guess[];
+  better: TopAnswer | null;
   nextLabel: string;
   onNext: () => void;
 }) {
   return (
     <div className="reveal">
       <div className="reveal-head">
-        <h2>You scored {bestPoints(props.guesses)}</h2>
+        <div>
+          <h2>You scored {bestPoints(props.guesses)}</h2>
+          {props.better && (
+            <p className="better">
+              Better: <strong>{props.better.word}</strong> · {props.better.points}
+            </p>
+          )}
+        </div>
         <button type="button" onClick={props.onNext}>
           {props.nextLabel}
         </button>
