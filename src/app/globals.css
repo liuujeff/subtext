@@ -63,6 +63,14 @@ main.game::-webkit-scrollbar{display:none}
 :root[data-keyboard] .stage{height:var(--visible-height)}
 :root[data-keyboard] .map{flex:0 1 auto;min-height:0}
 :root[data-keyboard] .map svg{flex:none}
+/* ...and the rest of the column tightens up, so more of the scope's bottom
+   (the clues, the crosshair, the ring numbers) stays in view. */
+:root[data-keyboard] .stage{padding-top:6px;padding-bottom:4px}
+:root[data-keyboard] header.top{margin-bottom:4px}
+:root[data-keyboard] .rounds{margin-bottom:5px}
+:root[data-keyboard] .pair{padding-top:6px}
+:root[data-keyboard] form{margin:6px 0 2px}
+:root[data-keyboard] .msg{min-height:1.3em;font-size:.85rem;margin:0}
 header.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 h1{font-size:1.55rem;line-height:1;margin:0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
   color:var(--glow);text-shadow:0 0 12px var(--shine)}
