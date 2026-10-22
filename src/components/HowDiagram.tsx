@@ -3,13 +3,15 @@ import { useId } from "react";
 import { HALO, Scope } from "./GuessMap";
 import { AX, BX, CX, CY, HEIGHT, polar, position, WIDTH } from "./map-layout";
 
-// An example pair and three guesses, drawn on the same scope as the game.
+// An example pair and three guesses, drawn on the same scope as the game, each
+// with why it landed there. The points are what the game gives them; the
+// leans are evened out a little so the labels fit.
 const A = "camel";
 const B = "ship";
 const GUESSES = [
-  { word: "caravan", points: 80, lean: 0.02, side: "right" },
-  { word: "sand", points: 55, lean: -0.25, side: "left" },
-  { word: "ocean", points: 40, lean: 0.3, side: "right" },
+  { word: "transport", points: 76, lean: 0.06, side: "above", why: "fits both" },
+  { word: "sand", points: 32, lean: -0.25, side: "left", why: `only ${A}` },
+  { word: "ocean", points: 34, lean: 0.3, side: "right", why: `only ${B}` },
 ] as const;
 
 /** The "How to play" picture: the sonar scope, labelled, with the day's numbers underneath. */
@@ -23,7 +25,7 @@ export function HowDiagram() {
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label={`Example sonar for the pair ${A} and ${B}. The crosshair in the middle is the best word. The closer a guess is to the middle, the more points it scores. A guess that swings toward one side leans toward that word.`}
+        aria-label={`Example sonar for the pair ${A} and ${B}. The crosshair in the middle is the best word, which stays secret. Transport fits both words, so it lands near the middle and scores 76. Sand only fits ${A}, so it drifts toward ${A} and scores 32. Ocean only fits ${B}, so it drifts toward ${B} and scores 34.`}
       >
         <defs>
           <radialGradient id={`${id}fill`}>
@@ -47,7 +49,7 @@ export function HowDiagram() {
           })}
         </g>
         <text x={CX} y={CY + 30} textAnchor="middle" fontSize={11} fontWeight={800} fill="var(--target)" {...HALO}>
-          best word: 100
+          best word (secret): 100
         </text>
 
         {([[AX, "var(--a)", A], [BX, "var(--b)", B]] as const).map(([x, color, word]) => (
@@ -60,27 +62,29 @@ export function HowDiagram() {
           </g>
         ))}
 
-        {spots.map((g) => (
-          <g key={g.word}>
-            <circle cx={g.x} cy={g.y} r={5} fill="var(--glow)" />
-            <text
-              x={g.side === "right" ? g.x + 10 : g.x - 10}
-              y={g.y + 4}
-              textAnchor={g.side === "right" ? "start" : "end"}
-              fontSize={12}
-              fill="var(--ink)"
-              {...HALO}
-            >
-              {g.word} <tspan fontWeight={800} fill="var(--glow)">{g.points}</tspan>
-            </text>
-          </g>
-        ))}
+        {spots.map((g) => {
+          // Beside the blip, or centred over it (word above, reason below).
+          const x = g.side === "right" ? g.x + 10 : g.side === "left" ? g.x - 10 : g.x;
+          const anchor = g.side === "right" ? "start" : g.side === "left" ? "end" : "middle";
+          const above = g.side === "above";
+          return (
+            <g key={g.word}>
+              <circle cx={g.x} cy={g.y} r={5} fill="var(--glow)" />
+              <text x={x} y={above ? g.y - 10 : g.y + 4} textAnchor={anchor} fontSize={12} fill="var(--ink)" {...HALO}>
+                {g.word} <tspan fontWeight={800} fill="var(--glow)">{g.points}</tspan>
+              </text>
+              <text x={x} y={above ? g.y + 18 : g.y + 17} textAnchor={anchor} fontSize={10} fill="var(--soft)" {...HALO}>
+                {g.why}
+              </text>
+            </g>
+          );
+        })}
 
         <text x={CX} y={CY + 56} textAnchor="middle" fontSize={11} fill="var(--soft)" {...HALO}>
-          closer to the middle: more points
+          closer to the middle = more points
         </text>
         <text x={CX} y={CY + 72} textAnchor="middle" fontSize={11} fill="var(--soft)" {...HALO}>
-          leans toward the clue it fits best
+          drifts toward the word it fits better
         </text>
       </svg>
       <ul className="facts">
@@ -95,7 +99,8 @@ export function HowDiagram() {
         </li>
       </ul>
       <figcaption>
-        A good guess fits <em>both</em> words. Catch-all words like “thing” score low.
+        Only a guess’s <em>weaker</em> link counts, so it has to fit both words. Catch-all words like
+        “thing” score low.
       </figcaption>
     </figure>
   );

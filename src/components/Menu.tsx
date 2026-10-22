@@ -81,7 +81,7 @@ export function Menu({
           </div>
           <details className="section" open={howOpen} onToggle={(e) => setHowOpen(e.currentTarget.open)}>
             <summary>How to play</summary>
-            <p className="lede">Find one word that sits between two others in meaning.</p>
+            <p className="lede">Find one word that connects two unrelated words.</p>
             {children}
           </details>
           <div className="row modes">
