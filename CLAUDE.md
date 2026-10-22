@@ -210,9 +210,11 @@ All responses are JSON; errors are `{ error, ... }`.
   **The keyboard never rescales the scope.** `main.game` is a fixed window onto `.stage`
   (100dvh). While the on-screen keyboard is up, `src/lib/viewport.ts` sets `data-keyboard`,
   `--visible-height` and `--visible-top` on `<html>` from the visual viewport; the stage
-  then takes the visible height and the map takes what's left, with its SVG at its normal
-  size, so the scope is cropped from the bottom (the empty part below the clues first)
-  instead of shrinking. The `.dock` (guess bar + status line) sits right under it, just
+  then takes the visible height and the map gives up what it must (never grows), with its
+  SVG at its normal size, so the scope is cropped from the bottom (the empty part below the
+  clues first) instead of shrinking. The keyboard is measured against
+  `document.documentElement.clientHeight`, not `innerHeight`: iOS 27 Safari shrinks
+  `innerHeight` by however far it scrolls the page, which hid the keyboard entirely. The `.dock` (guess bar + status line) sits right under it, just
   above the keyboard. `html`/`body` don't scroll at all (iOS would scroll the document by
   the keyboard's height). Safari slides the page up when a field it's about to cover gains
   focus (blank space, then a snap), before the viewport reports the keyboard, so when a
@@ -221,7 +223,12 @@ All responses are JSON; errors are `{ error, ... }`.
   That guess holds while the keyboard is still sliding up (the area above it is taller than
   the guess until it stops; following it bounced the guess bar down and back up) and gives way
   to the real size once the viewport has been still for 150 ms. The height is remembered
-  only once settled too: a closing keyboard passes through every smaller height.
+  only once settled too: a closing keyboard passes through every smaller height. iOS 27
+  Safari also scrolls the page to centre the field (even one already in view) and reports it
+  as the visual viewport's `offsetTop`; `--visible-top` follows it in the event itself (not
+  on the next frame), so the page is never drawn shifted. On touch screens `Game.tsx` doesn't
+  focus the field from code (no keyboard on iOS, and the player's later tap on an already
+  focused field isn't a focus, so the early crop never ran).
   Not on the touch itself: moving the field from under the finger before the tap ends
   sends the tap elsewhere and no keyboard opens (that broke Chrome and Safari); and while the keyboard is
   up, page drags are blocked (`touchmove` preventDefault, except in the menu dialog). Fire and the spelling suggestion keep focus, and the keyboard,

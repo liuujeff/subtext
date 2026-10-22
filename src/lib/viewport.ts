@@ -8,27 +8,35 @@
 // the scope (the empty part below the clues goes first) rather than scaling
 // it, so the drawing never jumps.
 //
-// Two iOS habits need heading off:
-// - Safari slides the whole page up when a field it's about to cover gains
-//   focus (blank space shows below the page), before the viewport reports
-//   the keyboard. So when a field the player touched takes focus, the game is
-//   fitted to the keyboard height seen last time (or a guess); the field is
-//   then already above the keyboard and Safari has nothing to slide. The real
-//   size replaces the guess once the keyboard has settled: while it's still
-//   sliding up, the area above it is taller than the guess, and following
-//   it would push the guess bar down and back up again. Not on the touch
-//   itself: moving the field from under the finger before the tap ends sends
-//   the tap elsewhere, and the field never gets focus (no keyboard). Not on
-//   focus set from code either: that opens no keyboard on iOS.
+// The keyboard is measured against the root element's height, which stays
+// put: iOS 27 Safari shrinks window.innerHeight by however far it scrolls the
+// page for the keyboard, so innerHeight minus the visible height can come out
+// well short of the keyboard.
+//
+// Three iOS habits need heading off:
+// - Safari slides the whole page up when a field gains focus (blank space
+//   shows below the page), before the viewport reports the keyboard. So when
+//   a field the player touched takes focus, the game is fitted to the
+//   keyboard height seen last time (or a guess) at once. The real size
+//   replaces the guess once the keyboard has settled: while it's still
+//   sliding up, the area above it is taller than the guess, and following it
+//   would push the guess bar down and back up again. Not on the touch itself:
+//   moving the field from under the finger before the tap ends sends the tap
+//   elsewhere, and the field never gets focus (no keyboard). Not on focus set
+//   from code either: that opens no keyboard on iOS (Game.tsx doesn't focus
+//   the field from code on touch screens, so the player's tap is a focus).
+// - Safari scrolls the page to centre the field even when it's in view
+//   (iOS 27), and reports that as the visual viewport's offsetTop. The game
+//   follows it in the same event, before the page is drawn, so nothing moves.
 // - With the keyboard up, iOS lets the page be dragged around. The game fits
 //   the visible area and has nothing to scroll, so drags are blocked then.
 
 // The visual viewport is this much shorter than the layout one: a keyboard,
 // not a browser bar (iOS 26 can leave ~24px behind after the keyboard closes).
 const KEYBOARD_PX = 100;
-// No keyboard seen yet: phone keyboards (with their suggestion bar) take
-// about this share of the screen.
-const GUESS_SHARE = 0.4;
+// No keyboard seen yet: phone keyboards (with the bar above them) take about
+// this share of the screen (35% on an iPhone 17 with iOS 27).
+const GUESS_SHARE = 0.35;
 // Focus that brings up no keyboard (a hardware keyboard): let go of the guess
 // if the viewport still hasn't shrunk by then.
 const NO_KEYBOARD_MS = 800;
@@ -57,7 +65,6 @@ export function trackVisibleArea(): () => void {
   const root = document.documentElement;
   const touch = window.matchMedia?.("(pointer: coarse)").matches ?? false;
   let keyboard = storedKeyboard();
-  let frame = 0;
   let still: number | undefined; // the keyboard's height is remembered once it stops
   let waiting: number | undefined; // a guess is up, waiting for the keyboard
   let shown = 0; // the height the game is fitted to
@@ -74,9 +81,11 @@ export function trackVisibleArea(): () => void {
     root.style.removeProperty("--visible-height");
     root.style.removeProperty("--visible-top");
   };
+  // The page's own height, keyboard or not.
+  const full = () => root.clientHeight;
   const keyboardUp = () =>
     // Pinch-zoom also shrinks the visual viewport; that isn't a keyboard.
-    Math.abs(vv.scale - 1) <= 0.01 && window.innerHeight - vv.height >= KEYBOARD_PX;
+    Math.abs(vv.scale - 1) <= 0.01 && full() - vv.height >= KEYBOARD_PX;
 
   const settle = (ms: number) => {
     window.clearTimeout(waiting);
@@ -91,7 +100,9 @@ export function trackVisibleArea(): () => void {
       return;
     }
     if (waiting !== undefined && vv.height > shown + 1) {
-      // Still sliding up past the guess: wait until it stops.
+      // Still sliding up past the guess: keep the size until it stops, but
+      // follow any scroll now.
+      set(shown, vv.offsetTop);
       settle(SETTLE_MS);
       return;
     }
@@ -103,26 +114,20 @@ export function trackVisibleArea(): () => void {
     still = window.setTimeout(remember, SETTLE_MS);
   };
   const remember = () => {
-    const covered = window.innerHeight - vv.height;
+    const covered = full() - vv.height;
     if (!keyboardUp() || Math.abs(covered - keyboard) < 1) return;
     keyboard = covered;
     try {
       localStorage.setItem(STORE_KEY, String(Math.round(covered)));
     } catch {}
   };
-  // At most once per frame while the keyboard animates.
-  const schedule = () => {
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(update);
-  };
-
   const onPointerDown = (e: PointerEvent) => {
     touched = { target: e.target, at: Date.now() };
   };
   const onFocusIn = (e: FocusEvent) => {
     const fromTouch = touched.target === e.target && Date.now() - touched.at < TOUCH_FOCUS_MS;
     if (!touch || !fromTouch || !isTextField(e.target) || keyboardUp()) return;
-    set(window.innerHeight - (keyboard || window.screen.height * GUESS_SHARE), 0);
+    set(full() - (keyboard || window.screen.height * GUESS_SHARE), 0);
     settle(NO_KEYBOARD_MS);
   };
 
@@ -134,18 +139,18 @@ export function trackVisibleArea(): () => void {
   };
 
   update();
-  vv.addEventListener("resize", schedule);
-  vv.addEventListener("scroll", schedule);
+  // Straight away, not on the next frame: the page mustn't be drawn shifted.
+  vv.addEventListener("resize", update);
+  vv.addEventListener("scroll", update);
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("focusin", onFocusIn);
   document.addEventListener("touchmove", onTouchMove, { passive: false });
   return () => {
-    vv.removeEventListener("resize", schedule);
-    vv.removeEventListener("scroll", schedule);
+    vv.removeEventListener("resize", update);
+    vv.removeEventListener("scroll", update);
     document.removeEventListener("pointerdown", onPointerDown, true);
     document.removeEventListener("focusin", onFocusIn);
     document.removeEventListener("touchmove", onTouchMove);
-    cancelAnimationFrame(frame);
     window.clearTimeout(waiting);
     window.clearTimeout(still);
     clear();

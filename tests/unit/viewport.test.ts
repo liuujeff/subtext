@@ -21,6 +21,7 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
   const dataset: Record<string, string> = {};
   const doc = Object.assign(new EventTarget(), {
     documentElement: {
+      clientHeight: innerHeight,
       dataset,
       style: {
         setProperty: (k: string, v: string) => props.set(k, v),
@@ -44,8 +45,6 @@ function setUp(innerHeight: number, { touch = true, stored = "" } = {}) {
     getItem: (k: string) => storage.get(k) ?? null,
     setItem: (k: string, v: string) => storage.set(k, v),
   });
-  vi.stubGlobal("requestAnimationFrame", (cb: () => void) => (cb(), 1));
-  vi.stubGlobal("cancelAnimationFrame", () => {});
 
   const move = (change: Partial<typeof vv>) => {
     Object.assign(vv, change);
@@ -98,7 +97,7 @@ describe("trackVisibleArea", () => {
     const { move, tap, height, storage } = setUp(660);
     const stop = trackVisibleArea();
     expect(tap()).toBeNull(); // nothing moves under the finger before the tap lands
-    expect(height()).toBe(`${660 - 700 * 0.4}px`); // first time: 40% of the screen
+    expect(height()).toBe(`${660 - 700 * 0.35}px`); // first time: 35% of the screen
     move({ height: 350 });
     expect(height()).toBe("350px");
     vi.advanceTimersByTime(150);
@@ -122,6 +121,26 @@ describe("trackVisibleArea", () => {
     expect(height()).toBe("380px");
     move({ height: 300 }); // up and settled: follow it (a taller keyboard)
     expect(height()).toBe("300px");
+    stop();
+  });
+
+  it("follows Safari's scroll at once, even while holding the size", () => {
+    const { props, move, tap, height } = setUp(660, { stored: "300" });
+    const stop = trackVisibleArea();
+    tap();
+    move({ height: 380, offsetTop: 95 }); // iOS 27 centres the field
+    expect(height()).toBe("360px");
+    expect(props.get("--visible-top")).toBe("95px");
+    stop();
+  });
+
+  it("measures the keyboard against the page, not innerHeight", () => {
+    const { dataset, move } = setUp(714);
+    const stop = trackVisibleArea();
+    // iOS 27: innerHeight drops by the scroll, leaving 98px "covered".
+    Object.assign(window, { innerHeight: 509 });
+    move({ height: 411, offsetTop: 205 });
+    expect("keyboard" in dataset).toBe(true);
     stop();
   });
 
