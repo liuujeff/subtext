@@ -205,7 +205,8 @@ All responses are JSON; errors are `{ error, ... }`.
 
 ### Frontend (`src/components/`)
 - One screen, no scrolling, on phones down to 375×553 (iPhone SE with browser bars): a
-  column where the map keeps its shape and shrinks when the rest needs room, "Next pair"
+  column (up to 760px wide on bigger screens, where the scope scales up; the day curve stops at
+  520px so its labels don't balloon) where the map keeps its shape and shrinks when the rest needs room, "Next pair"
   sits beside the score, and a `max-height: 640px` query tightens small screens.
   **The keyboard never rescales the scope.** `main.game` is a fixed window onto `.stage`
   (100dvh). While the on-screen keyboard is up, `src/lib/viewport.ts` sets `data-keyboard`,
