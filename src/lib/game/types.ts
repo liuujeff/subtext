@@ -28,6 +28,9 @@ export type GuessResponse = { points: number; rank: number; lean: number; over: 
 
 export type RevealResponse = { top: TopAnswer[] };
 
+/** A word that would have beaten the player's best, or null if they did well enough. */
+export type BetterResponse = { better: TopAnswer | null };
+
 export type RandomResponse = PuzzleRound;
 
 export type StatsResponse = Stats;

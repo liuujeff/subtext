@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { GET as betterRoute } from "@/app/api/better/route";
 import { POST as guessRoute } from "@/app/api/guess/route";
 import { POST as randomRoute } from "@/app/api/random/route";
 import { GET as revealRoute } from "@/app/api/reveal/route";
@@ -46,6 +47,7 @@ const today = (p: Player) => call(todayRoute, "/api/today", p);
 const start = (p: Player, puzzleId: unknown) => call(startRoute, "/api/start", p, { puzzleId });
 const guess = (p: Player, puzzleId: unknown, word: unknown) => call(guessRoute, "/api/guess", p, { puzzleId, word });
 const reveal = (p: Player, puzzleId: number) => call(revealRoute, `/api/reveal?puzzleId=${puzzleId}`, p);
+const better = (p: Player, puzzleId: number) => call(betterRoute, `/api/better?puzzleId=${puzzleId}`, p);
 const random = (p: Player) => call(randomRoute, "/api/random", p, {});
 
 /** A guest who has already been given a cookie. */
@@ -332,6 +334,29 @@ describe("the round clock", () => {
     expect((await reveal(p, id)).body).toEqual({
       top: [{ word: SECRET, points: 100 }, { word: "qwmid", points: 92 }],
     });
+  });
+});
+
+describe("GET /api/better", () => {
+  it("stays locked until the round is over, then names a word only after a weak round", async () => {
+    const p = await guest();
+    const id = ids.today[1];
+    await start(p, id);
+    expect((await better(p, id)).body).toEqual({ error: "round_not_over" });
+    await startedAgo(p, id, 61);
+    expect((await better(p, id)).body).toEqual({ error: "round_not_over" }); // grace period
+    await startedAgo(p, id, 64);
+    // Nothing scored before the clock ran out: the weakest of the top answers,
+    // never the best word, with its points scored now.
+    expect((await better(p, id)).body).toEqual({ better: { word: "qwmid", points: 92 } });
+  });
+
+  it("names nothing after a round that scored more than 66", async () => {
+    const p = await guest();
+    const id = ids.today[2];
+    await start(p, id);
+    for (const w of ["qwmid", "qvlow", "qtzero"]) await guess(p, id, w);
+    expect((await better(p, id)).body).toEqual({ better: null });
   });
 });
 

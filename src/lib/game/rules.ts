@@ -75,6 +75,9 @@ export function isRoundOver(guesses: readonly { rank: number }[]): boolean {
   return guesses.length >= GUESSES_PER_ROUND || guesses.some((g) => g.rank === 1);
 }
 
+// A round whose best is this or less gets a better word shown once it's over.
+export const BETTER_WORD_MAX = 66;
+
 export function bestPoints(guesses: readonly { points: number }[]): number {
   return guesses.reduce((best, g) => Math.max(best, g.points), 0);
 }

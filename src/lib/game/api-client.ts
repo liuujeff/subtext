@@ -3,6 +3,7 @@ import { getSessionToken, resetSession } from "@/lib/supabase/browser";
 import type {
   ApiErrorBody,
   ApiErrorCode,
+  BetterResponse,
   DistributionResponse,
   GuessResponse,
   LinkResponse,
@@ -57,6 +58,7 @@ export const api = {
   start: (puzzleId: number) => call<StartResponse>("/api/start", { puzzleId }),
   guess: (puzzleId: number, word: string) => call<GuessResponse>("/api/guess", { puzzleId, word }),
   reveal: (puzzleId: number) => call<RevealResponse>(`/api/reveal?puzzleId=${puzzleId}`),
+  better: (puzzleId: number) => call<BetterResponse>(`/api/better?puzzleId=${puzzleId}`),
   random: (exclude?: number) => call<RandomResponse>("/api/random", { exclude }),
   stats: () => call<StatsResponse>("/api/stats"),
   distribution: () => call<DistributionResponse>("/api/distribution"),
