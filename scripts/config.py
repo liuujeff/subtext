@@ -41,19 +41,20 @@ LAM = 1.0
 # last. Fitted so a simulated population's best-of-three scores come out close to a bell
 # (mean ~50) instead of a flat spread: the top is steep (rank 2 = 92), the middle is a long
 # shallow slope where most players land, and the bottom falls away.
+# Since then every knot past rank 10 has had its rank doubled: the fit felt too harsh there.
 RANK_KNOTS = [
     (1, 100),
     (2, 92),
     (3, 86),
     (5, 80),
     (10, 72),
-    (20, 67),
-    (50, 61),
-    (100, 58),
-    (300, 53),
-    (1_000, 46),
-    (3_000, 36),
-    (10_000, 18),
+    (40, 67),
+    (100, 61),
+    (200, 58),
+    (600, 53),
+    (2_000, 46),
+    (6_000, 36),
+    (20_000, 18),
     (25_000, 0),
 ]
 RANK_CAP = RANK_KNOTS[-1][0]  # the whole pool: only the very worst pool words score 0

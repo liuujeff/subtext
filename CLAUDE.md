@@ -16,7 +16,7 @@ pipeline that builds all the word data. Answers never reach the browser.
   lost. Guess the best possible word (rank 1) and the round ends early. Your best guess in
   the pair counts (0 if the clock ran out first).
 - **Points**: 0–100 from the guess's rank among 25,000 common words: rank 1 = 100, rank 2 = 92,
-  rank 10 = 72, rank 100 = 58, rank 1,000 = 46, rank 5,000 = 28; only the very worst words
+  rank 10 = 72, rank 100 = 61, rank 1,000 = 50, rank 5,000 = 38; only the very worst words
   score 0. Max 500 a day. The curve is shaped so scores come out close to a bell (see Scoring).
 - **What makes a good guess**: it has to fit *both* words; only the weaker link counts.
   Catch-all words ("thing", "area") get a penalty.
@@ -96,11 +96,12 @@ answers come only after the server confirms the round is over.
 - `rank` = 1 + number of eligible pool words with a strictly higher objective (more than
   1e-6 higher: float32 rounding). Eligible = not too close to either clue (rule above).
 - `points` = straight lines in ln(rank) between the `RANK_KNOTS` (rank, points) pairs in
-  `config.py` / `rules.ts`: (1, 100), (2, 92), (3, 86), (5, 80), (10, 72), (20, 67), (50, 61),
-  (100, 58), (300, 53), (1,000, 46), (3,000, 36), (10,000, 18), (25,000, 0); `RANK_CAP` is the
+  `config.py` / `rules.ts`: (1, 100), (2, 92), (3, 86), (5, 80), (10, 72), (40, 67), (100, 61),
+  (200, 58), (600, 53), (2,000, 46), (6,000, 36), (20,000, 18), (25,000, 0); `RANK_CAP` is the
   last rank (the whole pool). Python rounds with `floor(x + 0.5)` to match JS. The knots were
   fitted so a *simulated* population's best-of-three scores form a bell around 50 (the old
-  `(1 - ln r / ln 25000)^0.6` curve gave a flat, wide spread). The simulation is a stand-in
+  `(1 - ln r / ln 25000)^0.6` curve gave a flat, wide spread); then every knot past rank 10
+  had its rank doubled, as the fitted curve felt too harsh past the top ten. The simulation is a stand-in
   (independent guesses drawn from words near the clues, four skill levels), not real play:
   once there are real guesses, refit the knots to them. The share symbols (🎯 80+, 💥 55+,
   🌊 35+) and the map's range rings (80 / 55 / 35) follow the same scale.
