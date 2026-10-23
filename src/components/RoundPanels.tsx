@@ -97,9 +97,6 @@ export function DaySummary(props: { date: string; rounds: PuzzleRound[]; streak:
           Play a random pair
         </button>
       </div>
-      <p className="msg" style={{ marginTop: 10 }}>
-        A new set of pairs arrives at midnight.
-      </p>
     </div>
   );
 }
